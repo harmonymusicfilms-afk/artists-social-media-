@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Artists Social Media",
+  "description": "A premium, large-scale multi-module platform for artists, featuring a robust user system and high-end UI/UX.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
