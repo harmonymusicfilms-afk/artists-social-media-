@@ -1,7 +1,10 @@
 
 import { supabase } from './supabase';
-import { UserProfile, Job, PortfolioItem, Video, MLMPost, CastingProject } from '../types';
-import { USER_PROFILES, MOCK_JOBS, MOCK_VIDEOS, MOCK_MLM_POSTS, MOCK_CASTING_PROJECTS } from '../constants';
+import { UserProfile, Job, PortfolioItem, Video, MLMPost, CastingProject, Studio, NgoShgGroup, MusicProduct } from '../types';
+import { 
+    USER_PROFILES, MOCK_JOBS, MOCK_VIDEOS, MOCK_MLM_POSTS, 
+    MOCK_CASTING_PROJECTS, MOCK_STUDIOS, MOCK_NGO_SHG_GROUPS, MOCK_MUSIC_PRODUCTS 
+} from '../constants';
 
 // Helper to check if Supabase is connected/configured
 const isSupabaseConfigured = () => {
@@ -17,7 +20,7 @@ export const apiFetchArtists = async (): Promise<UserProfile[]> => {
         const { data, error } = await supabase
             .from('profiles')
             .select('*')
-            .in('platform_role', ['Artist', 'Performing Arts Teacher', 'Trainer/Coach']);
+            .in('platform_role', ['Artist', 'Performing Arts Teacher', 'Trainer/Coach', 'Digital Worker']);
 
         if (error) throw error;
         if (!data || data.length === 0) return USER_PROFILES;
@@ -167,7 +170,7 @@ export const apiFetchVideos = async (): Promise<Video[]> => {
 };
 
 export const apiFetchShorts = async (): Promise<Video[]> => {
-    if (!isSupabaseConfigured()) return []; // or mock shorts
+    if (!isSupabaseConfigured()) return [];
     try {
         const { data, error } = await supabase
             .from('videos')
@@ -193,7 +196,7 @@ export const apiCreateVideo = async (videoData: Partial<Video>, userId: string) 
             video_type: videoData.type || 'video',
             duration: videoData.duration,
             category: videoData.category,
-            status: 'pending' // Default to pending
+            status: 'pending'
         }).select().single();
         if (error) throw error;
         return { data };
@@ -247,7 +250,7 @@ export const apiCreateMLMPost = async (postData: Partial<MLMPost>, userId: strin
     }
 };
 
-// --- CASTING PROJECTS ---
+// --- CASTING ---
 
 export const apiFetchCastingProjects = async (): Promise<CastingProject[]> => {
     if (!isSupabaseConfigured()) return MOCK_CASTING_PROJECTS;
@@ -274,6 +277,103 @@ export const apiFetchCastingProjects = async (): Promise<CastingProject[]> => {
         }));
     } catch (err) {
         return MOCK_CASTING_PROJECTS;
+    }
+};
+
+// --- STUDIOS ---
+
+export const apiFetchStudios = async (): Promise<Studio[]> => {
+    if (!isSupabaseConfigured()) return MOCK_STUDIOS;
+    try {
+        const { data, error } = await supabase
+            .from('studios')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (!data || data.length === 0) return MOCK_STUDIOS;
+
+        return data.map((row: any) => ({
+            id: row.id.toString(),
+            ownerId: row.owner_id,
+            name: row.name,
+            type: row.type,
+            location: row.location,
+            address: row.address,
+            coverPhoto: row.cover_photo,
+            gallery: row.gallery || [],
+            description: row.description,
+            equipment: row.equipment || [],
+            amenities: row.amenities || [],
+            pricing: row.pricing || {},
+            rating: row.rating || 0,
+            totalReviews: 0,
+            reviews: []
+        }));
+    } catch (err) {
+        return MOCK_STUDIOS;
+    }
+};
+
+// --- NGO/SHG ---
+
+export const apiFetchNgoGroups = async (): Promise<NgoShgGroup[]> => {
+    if (!isSupabaseConfigured()) return MOCK_NGO_SHG_GROUPS;
+    try {
+        const { data, error } = await supabase
+            .from('ngo_shg_groups')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (!data || data.length === 0) return MOCK_NGO_SHG_GROUPS;
+
+        return data.map((row: any) => ({
+            id: row.id.toString(),
+            name: row.name,
+            type: row.type,
+            focusArea: row.focus_area,
+            location: row.location,
+            members: row.members_count || 1,
+            description: row.description,
+            image: row.image,
+            contact: row.contact_info || {},
+            isVerified: row.is_verified,
+            ownerId: row.owner_id
+        }));
+    } catch (err) {
+        return MOCK_NGO_SHG_GROUPS;
+    }
+};
+
+// --- MUSIC PRODUCTS ---
+
+export const apiFetchMusicProducts = async (): Promise<MusicProduct[]> => {
+    if (!isSupabaseConfigured()) return MOCK_MUSIC_PRODUCTS;
+    try {
+        const { data, error } = await supabase
+            .from('music_products')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (!data || data.length === 0) return MOCK_MUSIC_PRODUCTS;
+
+        return data.map((row: any) => ({
+            id: row.id.toString(),
+            name: row.name,
+            category: row.category,
+            price: row.price,
+            type: row.type,
+            condition: row.condition,
+            image: row.image,
+            description: row.description,
+            seller: 'User', // Would need join to get name
+            location: row.location,
+            status: row.status
+        }));
+    } catch (err) {
+        return MOCK_MUSIC_PRODUCTS;
     }
 };
 
@@ -310,7 +410,7 @@ const mapVideoFromDB = (row: any): Video => ({
     id: row.id.toString(),
     type: row.video_type || 'video',
     youtubeUrl: row.youtube_url || '',
-    embedUrl: row.youtube_url ? row.youtube_url.replace('watch?v=', 'embed/') : '', // Basic conversion
+    embedUrl: row.youtube_url ? row.youtube_url.replace('watch?v=', 'embed/') : '', 
     mediaUrl: row.media_url,
     thumbnailUrl: row.thumbnail_url || 'https://via.placeholder.com/320x180',
     duration: row.duration || '0:00',

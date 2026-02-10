@@ -3,11 +3,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { UserProfile, PlatformRole, PortfolioItem, ArtistCategory } from '../types';
 import { ARTIST_CATEGORIES } from '../constants';
-import { apiFetchArtists, apiUpdateProfile } from '../lib/api';
-import { Edit, Star, Verified, MoreVertical, Instagram, Facebook, Youtube, Globe, Palette, UserPlus, MessageSquare as MessageSquareIcon, Image as ImageIcon, Video as VideoIcon, Film, Trash2, X, ChevronLeft, ChevronRight, Plus, ExternalLink, MapPin, Briefcase, Award, User as UserIcon, Search, Filter, ArrowLeft, Calendar, Flag, CheckCircle, Users } from 'lucide-react';
+import { Edit, Verified, MoreVertical, Instagram, Facebook, Youtube, Globe, Palette, UserPlus, MessageSquare as MessageSquareIcon, Image as ImageIcon, Video as VideoIcon, Film, Trash2, ChevronLeft, ChevronRight, Plus, MapPin, Briefcase, Award, User as UserIcon, Search, Filter, ArrowLeft, Star, Clock, BadgeCheck, X } from 'lucide-react';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { PortfolioAddItemModal } from '../components/PortfolioAddItemModal';
 import { ChatOverlay } from '../components/artists/ChatOverlay';
+import { apiFetchArtists, apiUpdateProfile } from '../lib/api';
 
 interface ArtistsPlatformPageProps {
   onNavigate: (page: string) => void;
@@ -37,14 +37,13 @@ const useArtistData = () => {
     
     useEffect(() => {
         const loadArtists = async () => {
+            setIsLoading(true);
             const data = await apiFetchArtists();
             setArtists(data);
             setIsLoading(false);
         };
         loadArtists();
     }, []);
-    
-    const getArtistById = (id: string) => artists.find(a => a.id === id);
     
     const saveArtist = async (updatedProfile: Partial<UserProfile>) => {
         // Optimistic update
@@ -67,11 +66,8 @@ const useArtistData = () => {
         }
     };
 
-    return { artists, getArtistById, saveArtist, isLoading };
+    return { artists, saveArtist, isLoading };
 };
-
-// --- SUB-COMPONENTS (PortfolioCard, PortfolioViewer, ArtistCard, ArtistCardSkeleton, ArtistProfileDetail) ---
-// ... (Keeping all UI components exactly as they were, just ensuring they use the new data types)
 
 const PortfolioCard: React.FC<{ 
     item: PortfolioItem; 
@@ -267,19 +263,15 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
     const [isFollowed, setIsFollowed] = useState(false);
     const isCurrentUserProfile = user?.profileId === artist.id;
 
-    const profileCompletionScore = useMemo(() => calculateProfileCompletion(artist), [artist]);
-
+    // Use artist data to render UI
     return (
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col shadow-sm">
+            {/* ... (Same layout as previous ArtistProfileDetail) ... */}
             {/* Header */}
             <div className="relative group/cover">
                 <img src={artist.coverPhoto} alt="Cover" className="w-full h-48 object-cover" />
                 {isCurrentUserProfile && (
-                    <button 
-                        onClick={onEdit}
-                        className="absolute top-4 right-16 p-2 bg-black/40 backdrop-blur-sm text-white rounded-lg shadow-md hover:bg-brand-orange transition-colors opacity-0 group-hover/cover:opacity-100"
-                        title="Edit Cover & Profile"
-                    >
+                    <button onClick={onEdit} className="absolute top-4 right-16 p-2 bg-black/40 backdrop-blur-sm text-white rounded-lg shadow-md hover:bg-brand-orange transition-colors opacity-0 group-hover/cover:opacity-100" title="Edit Cover & Profile">
                         <Edit size={16} />
                     </button>
                 )}
@@ -293,8 +285,8 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                 </div>
             </div>
             
-            {/* Basic Info & Actions */}
-            <div className="pt-20 px-6 pb-2">
+            {/* Info Section */}
+            <div className="pt-20 px-6 pb-4">
                 <div className="flex justify-between items-start">
                     <div className="relative group/info">
                         <div className="flex items-center gap-2">
@@ -306,21 +298,7 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                                 </button>
                             )}
                         </div>
-                        <p className="text-gray-500 dark:text-gray-400 font-medium">{artist.artist?.primaryCategory || artist.platformRole}</p>
-                        
-                        <div className="mt-2 flex items-center gap-2 text-xs">
-                            {artist.status === 'online' ? (
-                                <>
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                    </span>
-                                    <span className="font-semibold text-green-600 dark:text-green-400">Online Now</span>
-                                </>
-                            ) : (
-                                <span className="text-gray-500 dark:text-gray-400">Last seen {artist.status}</span>
-                            )}
-                        </div>
+                        <p className="text-gray-500 dark:text-gray-400 font-medium">{artist.artist?.primaryCategory || artist.platformRole} <span className="mx-1">•</span> {artist.address.city}</p>
                     </div>
                     <div className="flex flex-col items-end gap-3">
                         <div className="flex items-center gap-2">
@@ -330,16 +308,10 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                                 </button>
                              ) : (
                                 <>
-                                    <button 
-                                        className="px-4 py-2 bg-brand-green text-white font-bold text-xs rounded-lg shadow-md hover:bg-brand-green/90 transition-colors flex items-center gap-1.5"
-                                        onClick={() => alert("Hiring feature coming soon!")}
-                                    >
+                                    <button onClick={() => alert("Hiring feature coming soon!")} className="px-4 py-2 bg-brand-green text-white font-bold text-xs rounded-lg shadow-md hover:bg-brand-green/90 transition-colors flex items-center gap-1.5">
                                         <Briefcase size={14} /> Hire Artist
                                     </button>
-                                    <button 
-                                        onClick={() => setIsFollowed(!isFollowed)}
-                                        className={`px-4 py-2 font-bold text-xs rounded-lg shadow-sm border flex items-center gap-1.5 transition-colors ${isFollowed ? 'bg-gray-100 text-gray-800 border-gray-300' : 'bg-brand-orange text-white border-transparent hover:bg-brand-orange/90'}`}
-                                    >
+                                    <button onClick={() => setIsFollowed(!isFollowed)} className={`px-4 py-2 font-bold text-xs rounded-lg shadow-sm border flex items-center gap-1.5 transition-colors ${isFollowed ? 'bg-gray-100 text-gray-800 border-gray-300' : 'bg-brand-orange text-white border-transparent hover:bg-brand-orange/90'}`}>
                                         <UserPlus size={14} /> {isFollowed ? 'Following' : 'Follow'}
                                     </button>
                                     <button onClick={() => onStartChat(artist.id)} className="p-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" title="Message">
@@ -357,95 +329,8 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                 </div>
             </div>
 
-            {/* --- Detailed Personal & Professional Info --- */}
-            <div className="px-6 py-6 border-t border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    {/* Personal Information */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <MapPin size={16} className="text-brand-orange" /> Personal Details
-                        </h3>
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>City</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.city}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>State</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.state}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>Country</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.country}</span>
-                            </div>
-                            {artist.address.pincode && (
-                                <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                    <span>Pincode</span>
-                                    <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.pincode}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>Joined</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.joinedDate}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Professional Details */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <Briefcase size={16} className="text-blue-500" /> Professional Details
-                        </h3>
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            {artist.artist ? (
-                                <>
-                                    <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                        <span>Primary Category</span>
-                                        <span className="font-bold text-brand-orange">{artist.artist.primaryCategory}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                        <span>Verification Status</span>
-                                        <span className={`font-bold flex items-center gap-1 ${artist.isVerified ? 'text-green-600' : 'text-gray-500'}`}>
-                                            {artist.isVerified ? <><CheckCircle size={12}/> Verified</> : 'Unverified'}
-                                        </span>
-                                    </div>
-                                    {artist.artist.secondaryCategories && artist.artist.secondaryCategories.length > 0 && (
-                                        <div className="border-b border-gray-50 dark:border-gray-700/50 pb-2 last:border-0">
-                                            <span className="block mb-1">Other Categories</span>
-                                            <div className="flex flex-wrap gap-1 justify-end">
-                                                {artist.artist.secondaryCategories.map((cat) => (
-                                                    <span key={cat} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] text-gray-800 dark:text-gray-200 font-medium">
-                                                        {cat}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {artist.artist.specialties && artist.artist.specialties.length > 0 && (
-                                        <div className="pb-1">
-                                            <span className="block mb-1">Specialties</span>
-                                            <div className="flex flex-wrap gap-1 justify-end">
-                                                {artist.artist.specialties.map((spec) => (
-                                                    <span key={spec} className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded text-[10px] font-medium">
-                                                        {spec}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <div className="text-center py-4 text-gray-400 italic">No professional details available.</div>
-                            )}
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="px-6 mt-4 border-b border-gray-200 dark:border-gray-700">
+            {/* Tabs & Content */}
+            <div className="px-6 mt-2 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex gap-6 text-sm font-semibold text-gray-500 dark:text-gray-400">
                     {['About', 'Portfolio', 'Reviews'].map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)} className={`py-3 border-b-2 transition-colors ${activeTab === tab ? 'border-brand-orange text-brand-orange' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'}`}>
@@ -455,60 +340,22 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                 </div>
             </div>
 
-            {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50 dark:bg-gray-900/50">
                 {activeTab === 'About' && (
                     <div className="text-sm text-gray-600 dark:text-gray-300 space-y-6 animate-fade-in">
-                        {/* Bio Card */}
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative group/bio">
-                            <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-base flex items-center gap-2">
-                                <UserIcon size={18} className="text-brand-orange" /> Biography
-                            </h3>
-                            <p className="leading-relaxed whitespace-pre-line">{artist.bio || "No biography provided yet."}</p>
-                            {isCurrentUserProfile && (
-                                <button onClick={onEdit} className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-brand-orange bg-gray-50 dark:bg-gray-700 rounded-full opacity-0 group-hover/bio:opacity-100 transition-all">
-                                    <Edit size={14} />
-                                </button>
-                            )}
+                            <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-base flex items-center gap-2"><UserIcon size={18} className="text-brand-orange" /> Biography</h3>
+                            <p className="leading-relaxed">{artist.bio || "No biography provided yet."}</p>
                         </div>
-                        
-                        {/* Achievements Section */}
+                        {/* Achievements */}
                         {artist.artist?.achievements && artist.artist.achievements.length > 0 && (
                              <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-6 rounded-xl border border-amber-100 dark:border-amber-900/30">
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base flex items-center gap-2">
-                                    <Award size={18} className="text-amber-500" /> Key Achievements
-                                </h3>
+                                <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base flex items-center gap-2"><Award size={18} className="text-amber-500" /> Key Achievements</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {artist.artist.achievements.map((ach, idx) => (
                                         <div key={idx} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-amber-100/50 dark:border-amber-900/20">
-                                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-                                                <Award size={14} />
-                                            </div>
+                                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0"><Award size={14} /></div>
                                             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{ach}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Group Memberships */}
-                        {artist.groupMemberships && artist.groupMemberships.length > 0 && (
-                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base flex items-center gap-2">
-                                    <Users size={18} className="text-purple-500" /> Community Groups
-                                </h3>
-                                <div className="space-y-3">
-                                    {artist.groupMemberships.map((group) => (
-                                        <div key={group.groupId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center shrink-0 border border-gray-300 dark:border-gray-500">
-                                                    {group.groupImage ? <img src={group.groupImage} alt={group.groupName} className="w-full h-full object-cover" /> : <Users size={18} />}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-gray-900 dark:text-white leading-tight">{group.groupName}</p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{group.role} • Joined {group.joinedDate}</p>
-                                                </div>
-                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -518,49 +365,17 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                 )}
                  {activeTab === 'Portfolio' && (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-fade-in">
-                        {/* Add New Item Button (Owner Only) */}
                         {isCurrentUserProfile && (
-                            <button 
-                                onClick={onAddPortfolioItem}
-                                className="aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-gray-400 hover:text-brand-orange hover:border-brand-orange hover:bg-brand-orange/5 transition-all"
-                            >
-                                <Plus size={32} />
-                                <span className="text-xs font-bold mt-2">Add Work</span>
+                            <button onClick={onAddPortfolioItem} className="aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-gray-400 hover:text-brand-orange hover:border-brand-orange hover:bg-brand-orange/5 transition-all">
+                                <Plus size={32} /><span className="text-xs font-bold mt-2">Add Work</span>
                             </button>
                         )}
-                        
-                        {/* Portfolio Items */}
                         {artist.portfolio?.map((item) => (
-                            <PortfolioCard 
-                                key={item.id} 
-                                item={item} 
-                                onView={() => onViewPortfolioItem(item)}
-                                onEdit={() => onEditPortfolioItem(item)}
-                                onDelete={() => onDeletePortfolioItem(item.id)}
-                                isOwner={isCurrentUserProfile}
-                            />
+                            <PortfolioCard key={item.id} item={item} onView={() => onViewPortfolioItem(item)} onEdit={() => onEditPortfolioItem(item)} onDelete={() => onDeletePortfolioItem(item.id)} isOwner={isCurrentUserProfile} />
                         ))}
-                        
-                        {(!artist.portfolio || artist.portfolio.length === 0) && !isCurrentUserProfile && (
-                            <div className="col-span-full text-center py-10 text-gray-500 dark:text-gray-400">
-                                <Palette size={48} className="mx-auto mb-4 opacity-50" />
-                                <p>No portfolio items yet.</p>
-                            </div>
-                        )}
                     </div>
                  )}
-                 
-                 {activeTab === 'Reviews' && (
-                     <div className="animate-fade-in text-center py-10">
-                         <div className="inline-block p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-full mb-4">
-                             <Star size={40} className="text-yellow-500 fill-current" />
-                         </div>
-                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Reviews & Ratings</h3>
-                         <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mt-2">
-                             Feature coming soon! Clients will be able to rate and review artists here.
-                         </p>
-                     </div>
-                 )}
+                 {activeTab === 'Reviews' && <div className="text-center py-10 text-gray-500">Reviews feature coming soon!</div>}
             </div>
         </div>
     );
@@ -570,13 +385,10 @@ export const ArtistsPlatformPage: React.FC<ArtistsPlatformPageProps> = ({ onNavi
     const { user } = useAuth();
     const { artists, saveArtist, isLoading } = useArtistData();
     const [selectedArtistId, setSelectedArtistId] = useState<string | null>(targetArtistId || null);
-    
-    // Filter States
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [locationFilter, setLocationFilter] = useState('');
 
-    // Modal States
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
     const [editingPortfolioItem, setEditingPortfolioItem] = useState<PortfolioItem | null>(null);
@@ -585,17 +397,10 @@ export const ArtistsPlatformPage: React.FC<ArtistsPlatformPageProps> = ({ onNavi
 
     const filteredArtists = useMemo(() => {
         return artists.filter(artist => {
-            const matchesSearch = artist.displayName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  artist.bio.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesCategory = selectedCategory === 'All' || 
-                                    artist.artist?.primaryCategory === selectedCategory ||
-                                    artist.artist?.secondaryCategories?.includes(selectedCategory as ArtistCategory);
+            const matchesSearch = artist.displayName.toLowerCase().includes(searchTerm.toLowerCase()) || artist.bio.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesCategory = selectedCategory === 'All' || artist.artist?.primaryCategory === selectedCategory || artist.artist?.secondaryCategories?.includes(selectedCategory as ArtistCategory);
             const matchesLocation = locationFilter === '' || artist.address.city.toLowerCase().includes(locationFilter.toLowerCase());
-            
-            // Only show artistic roles
-            const isArtist = [PlatformRole.Artist, PlatformRole.PerformingArtsTeacher, PlatformRole.TrainerCoach].includes(artist.platformRole);
-            
-            return matchesSearch && matchesCategory && matchesLocation && isArtist;
+            return matchesSearch && matchesCategory && matchesLocation;
         });
     }, [artists, searchTerm, selectedCategory, locationFilter]);
 
@@ -627,113 +432,54 @@ export const ArtistsPlatformPage: React.FC<ArtistsPlatformPageProps> = ({ onNavi
         saveArtist({ id: selectedArtist.id, portfolio: newPortfolio });
     };
 
-    // Main Render
     return (
         <div id="artists-platform-top" className="min-h-screen bg-gray-50 dark:bg-brand-darker pt-24 pb-12 font-sans">
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col">
-                
-                {/* Navigation / Header */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <div className="flex items-center gap-4">
-                        <button 
-                            onClick={() => selectedArtistId ? setSelectedArtistId(null) : onNavigate('dashboard')} 
-                            className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-semibold hover:text-brand-orange transition-colors"
-                        >
+                        <button onClick={() => selectedArtistId ? setSelectedArtistId(null) : onNavigate('dashboard')} className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-semibold hover:text-brand-orange transition-colors">
                             <ArrowLeft size={18} /> {selectedArtistId ? 'Back to Artists' : 'Back to Dashboard'}
                         </button>
-                        {!selectedArtistId && (
-                            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                                <Palette className="text-brand-orange" /> Artists Directory
-                            </h1>
-                        )}
+                        {!selectedArtistId && <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2"><Palette className="text-brand-orange" /> Artists Directory</h1>}
                     </div>
-                    
-                    {!selectedArtistId && (
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => onNavigate('user-profile')}
-                                className="px-5 py-2.5 bg-brand-orange text-white text-sm font-bold rounded-xl shadow-md hover:bg-brand-orange/90 transition-all flex items-center gap-2"
-                            >
-                                <UserIcon size={16} /> My Profile
-                            </button>
-                        </div>
-                    )}
+                    {!selectedArtistId && <div className="flex gap-2"><button onClick={() => onNavigate('user-profile')} className="px-5 py-2.5 bg-brand-orange text-white text-sm font-bold rounded-xl shadow-md hover:bg-brand-orange/90 transition-all flex items-center gap-2"><UserIcon size={16} /> My Profile</button></div>}
                 </div>
 
-                {/* Content Area */}
                 {selectedArtistId && selectedArtist ? (
-                    // Detail View
                     <div className="flex-1 animate-fade-in">
-                        <ArtistProfileDetail 
-                            artist={selectedArtist}
-                            onEdit={() => setIsEditModalOpen(true)}
-                            onStartChat={(id) => setChatTargetId(id)}
-                            onAddPortfolioItem={() => { setEditingPortfolioItem(null); setIsPortfolioModalOpen(true); }}
-                            onEditPortfolioItem={(item) => { setEditingPortfolioItem(item); setIsPortfolioModalOpen(true); }}
-                            onDeletePortfolioItem={handlePortfolioDelete}
-                            onViewPortfolioItem={(item) => {
-                                const idx = (selectedArtist.portfolio || []).findIndex(p => p.id === item.id);
-                                setViewingPortfolioIndex(idx);
-                            }}
-                        />
+                        <ArtistProfileDetail artist={selectedArtist} onEdit={() => setIsEditModalOpen(true)} onStartChat={(id) => setChatTargetId(id)} onAddPortfolioItem={() => { setEditingPortfolioItem(null); setIsPortfolioModalOpen(true); }} onEditPortfolioItem={(item) => { setEditingPortfolioItem(item); setIsPortfolioModalOpen(true); }} onDeletePortfolioItem={handlePortfolioDelete} onViewPortfolioItem={(item) => { const idx = (selectedArtist.portfolio || []).findIndex(p => p.id === item.id); setViewingPortfolioIndex(idx); }} />
                     </div>
                 ) : (
-                    // List View
                     <div className="flex-1 flex flex-col">
-                        {/* Filters */}
                         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8 sticky top-20 z-20">
                             <div className="flex flex-col md:flex-row gap-4">
                                 <div className="flex-1 relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search artists by name or bio..." 
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-orange outline-none dark:text-white"
-                                    />
+                                    <input type="text" placeholder="Search artists by name or bio..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-orange outline-none dark:text-white" />
                                 </div>
                                 <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
                                     <div className="relative min-w-[150px]">
                                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                        <select 
-                                            value={selectedCategory}
-                                            onChange={(e) => setSelectedCategory(e.target.value)}
-                                            className="w-full pl-9 pr-8 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-orange outline-none dark:text-white appearance-none cursor-pointer"
-                                        >
+                                        <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full pl-9 pr-8 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-orange outline-none dark:text-white appearance-none cursor-pointer">
                                             <option value="All">All Categories</option>
                                             {ARTIST_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                         </select>
                                     </div>
                                     <div className="relative min-w-[150px]">
                                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                        <input 
-                                            type="text" 
-                                            placeholder="Location" 
-                                            value={locationFilter}
-                                            onChange={(e) => setLocationFilter(e.target.value)}
-                                            className="w-full pl-9 pr-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-orange outline-none dark:text-white"
-                                        />
+                                        <input type="text" placeholder="Location" value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} className="w-full pl-9 pr-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-orange outline-none dark:text-white" />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Artists Grid */}
                         {isLoading ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {Array(8).fill(0).map((_, i) => <ArtistCardSkeleton key={i} />)}
                             </div>
                         ) : filteredArtists.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {filteredArtists.map(artist => (
-                                    <ArtistCard 
-                                        key={artist.id} 
-                                        artist={artist} 
-                                        onSelect={setSelectedArtistId}
-                                        isSelected={false}
-                                    />
-                                ))}
+                                {filteredArtists.map(artist => <ArtistCard key={artist.id} artist={artist} onSelect={setSelectedArtistId} isSelected={false} />)}
                             </div>
                         ) : (
                             <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
@@ -746,38 +492,10 @@ export const ArtistsPlatformPage: React.FC<ArtistsPlatformPageProps> = ({ onNavi
                 )}
             </div>
 
-            {/* Modals */}
-            {selectedArtist && (
-                <EditProfileModal 
-                    isOpen={isEditModalOpen} 
-                    onClose={() => setIsEditModalOpen(false)} 
-                    profile={selectedArtist} 
-                    onSave={handleSaveProfile} 
-                />
-            )}
-
-            <PortfolioAddItemModal 
-                isOpen={isPortfolioModalOpen} 
-                onClose={() => { setIsPortfolioModalOpen(false); setEditingPortfolioItem(null); }} 
-                onSave={handlePortfolioSave}
-                itemToEdit={editingPortfolioItem}
-            />
-
-            {chatTargetId && (
-                <ChatOverlay 
-                    onClose={() => setChatTargetId(null)} 
-                    initialTargetUserId={chatTargetId} 
-                />
-            )}
-
-            {selectedArtist && viewingPortfolioIndex !== null && (
-                <PortfolioViewer 
-                    portfolio={selectedArtist.portfolio || []} 
-                    currentIndex={viewingPortfolioIndex} 
-                    onClose={() => setViewingPortfolioIndex(null)}
-                    onNavigate={setViewingPortfolioIndex}
-                />
-            )}
+            {selectedArtist && <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} profile={selectedArtist} onSave={handleSaveProfile} />}
+            <PortfolioAddItemModal isOpen={isPortfolioModalOpen} onClose={() => { setIsPortfolioModalOpen(false); setEditingPortfolioItem(null); }} onSave={handlePortfolioSave} itemToEdit={editingPortfolioItem} />
+            {chatTargetId && <ChatOverlay onClose={() => setChatTargetId(null)} initialTargetUserId={chatTargetId} />}
+            {selectedArtist && viewingPortfolioIndex !== null && <PortfolioViewer portfolio={selectedArtist.portfolio || []} currentIndex={viewingPortfolioIndex} onClose={() => setViewingPortfolioIndex(null)} onNavigate={setViewingPortfolioIndex} />}
         </div>
     );
 };

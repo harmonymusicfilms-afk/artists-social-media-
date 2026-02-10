@@ -289,8 +289,8 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({ onNavigate }) 
                             <div>
                                 <div className="flex items-center gap-3 relative group/name">
                                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{profile.fullName}</h1>
-                                  {profile.isVerified && <Verified size={24} className="text-blue-500 fill-current shrink-0" title="Platform Verified"/>}
-                                  {profile.weTubeVerificationStatus === 'verified' && <BadgeCheck size={24} className="text-red-500 fill-red-500/20 shrink-0" title="WeTube Verified Creator"/>}
+                                  {profile.isVerified && <span title="Platform Verified"><Verified size={24} className="text-blue-500 fill-current shrink-0" /></span>}
+                                  {profile.weTubeVerificationStatus === 'verified' && <span title="WeTube Verified Creator"><BadgeCheck size={24} className="text-red-500 fill-red-500/20 shrink-0" /></span>}
                                 </div>
                                 <div className="flex items-center gap-3 flex-wrap mt-1">
                                     <p className="text-brand-green font-semibold">@{profile.displayName}</p>

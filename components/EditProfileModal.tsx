@@ -61,7 +61,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
     if (section === 'artist' && field) {
        setFormData(prev => ({
         ...prev,
-        artist: { ...(prev.artist as object), [field]: value }
+        artist: { ...(prev.artist as any), [field]: value }
       }));
     } else if (field) {
       setFormData(prev => ({
@@ -103,7 +103,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
           
           setFormData(prev => ({
               ...prev,
-              artist: { ...(prev.artist as object), [field]: newItems }
+              artist: { ...(prev.artist as any), [field]: newItems }
           }));
       }
   };
@@ -121,7 +121,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
     setFormData(prev => ({
       ...prev,
-      artist: { ...(prev.artist as object), secondaryCategories: newCategories }
+      artist: { ...(prev.artist as any), secondaryCategories: newCategories }
     }));
   };
 

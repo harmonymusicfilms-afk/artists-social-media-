@@ -195,7 +195,7 @@ export const WeTubeChannelPage: React.FC<WeTubeChannelPageProps> = ({ creatorPro
                         <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
                             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{creatorProfile.displayName}</h1>
                             {creatorProfile.weTubeVerificationStatus === 'verified' && (
-                                <BadgeCheck size={24} className="text-blue-500 fill-blue-500/20" title="Verified" />
+                                <span title="Verified"><BadgeCheck size={24} className="text-blue-500 fill-blue-500/20" /></span>
                             )}
                         </div>
                         

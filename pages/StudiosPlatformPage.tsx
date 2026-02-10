@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Studio } from '../types';
-import { MOCK_STUDIOS } from '../constants';
 import { StudioCard } from '../components/studios/StudioCard';
 import { StudioProfile } from '../components/studios/StudioProfile';
 import { Search, MapPin, SlidersHorizontal, Plus, ArrowLeft } from 'lucide-react';
+import { apiFetchStudios } from '../lib/api';
 
 interface StudiosPlatformPageProps {
     initialStudioId?: string | null;
@@ -11,14 +12,25 @@ interface StudiosPlatformPageProps {
 }
 
 export const StudiosPlatformPage: React.FC<StudiosPlatformPageProps> = ({ initialStudioId, onNavigate }) => {
-    const [studios, setStudios] = useState<Studio[]>(MOCK_STUDIOS);
+    const [studios, setStudios] = useState<Studio[]>([]);
     const [selectedStudioId, setSelectedStudioId] = useState<string | null>(initialStudioId || null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [filters, setFilters] = useState({
         searchTerm: '',
         location: '',
         type: 'All'
     });
+
+    useEffect(() => {
+        const loadStudios = async () => {
+            setIsLoading(true);
+            const data = await apiFetchStudios();
+            setStudios(data);
+            setIsLoading(false);
+        };
+        loadStudios();
+    }, []);
 
     useEffect(() => {
         if (initialStudioId) {
@@ -115,17 +127,19 @@ export const StudiosPlatformPage: React.FC<StudiosPlatformPageProps> = ({ initia
                 
                 {/* Studio Grid */}
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {filteredStudios.map(studio => (
-                        <StudioCard key={studio.id} studio={studio} onSelect={setSelectedStudioId} />
-                    ))}
+                    {isLoading ? (
+                        <div className="col-span-full text-center py-20 text-gray-500">Loading studios...</div>
+                    ) : filteredStudios.length > 0 ? (
+                        filteredStudios.map(studio => (
+                            <StudioCard key={studio.id} studio={studio} onSelect={setSelectedStudioId} />
+                        ))
+                    ) : (
+                        <div className="col-span-full text-center py-20 text-gray-500">
+                            <h3 className="text-xl font-bold">No Studios Found</h3>
+                            <p>Try adjusting your search filters to find more creative spaces.</p>
+                        </div>
+                    )}
                 </div>
-
-                {filteredStudios.length === 0 && (
-                    <div className="text-center py-20 text-gray-500">
-                        <h3 className="text-xl font-bold">No Studios Found</h3>
-                        <p>Try adjusting your search filters to find more creative spaces.</p>
-                    </div>
-                )}
             </div>
         </div>
     );

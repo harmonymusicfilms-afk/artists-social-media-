@@ -101,7 +101,7 @@ export default function Team() {
           {teamMembers.map((member, index) => (
             <div
               key={index}
-              ref={el => cardsRef.current[index] = el}
+              ref={(el) => { cardsRef.current[index] = el; }}
               className="group relative h-[400px] perspective-1000"
             >
               {/* Card Container */}

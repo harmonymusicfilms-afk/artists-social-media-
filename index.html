@@ -14,24 +14,23 @@
           extend: {
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
-              display: ['Inter', 'sans-serif'], // Reverted to Inter for consistency
+              display: ['Inter', 'sans-serif'], 
             },
             colors: {
-              // --- PROFESSIONAL PALETTE ---
               brand: {
-                orange: '#f97316', // Standard Orange-500
-                green: '#10b981',  // Standard Emerald-500
-                dark: '#1f2937',   // Gray-800
-                darker: '#111827', // Gray-900
+                orange: '#f97316', 
+                green: '#10b981',  
+                dark: '#1f2937',   
+                darker: '#111827', 
               },
-              'health-primary': '#0ea5e9', // Sky-500
-              'health-secondary': '#3b82f6', // Blue-500
+              'health-primary': '#0ea5e9',
+              'health-secondary': '#3b82f6',
               'health-light': '#f0f9ff', 
               
-              'casting-primary': '#8b5cf6', // Violet-500
-              'casting-secondary': '#1e1b4b', // Indigo-950
-              'casting-accent': '#f472b6', // Pink-400
-              'casting-bg': '#f3f4f6', // Gray-100
+              'casting-primary': '#8b5cf6',
+              'casting-secondary': '#1e1b4b',
+              'casting-accent': '#f472b6',
+              'casting-bg': '#f3f4f6',
               'casting-card': '#ffffff',
               'casting-text-dark': '#111827',
               'casting-text-light': '#6b7280',
@@ -59,20 +58,18 @@
       }
     </script>
     <style>
-      /* --- GLOBAL THEME RESET --- */
       body {
-        background-color: #f9fafb; /* gray-50 */
-        color: #1f2937; /* gray-800 */
+        background-color: #f9fafb;
+        color: #1f2937;
         font-family: 'Inter', sans-serif;
         overflow-x: hidden;
       }
       
       .dark body {
-        background-color: #111827; /* gray-900 */
-        color: #f9fafb; /* gray-50 */
+        background-color: #111827;
+        color: #f9fafb;
       }
 
-      /* Custom Scrollbar - Clean */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -80,35 +77,32 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #d1d5db; /* gray-300 */
+        background: #d1d5db;
         border-radius: 4px;
       }
       .dark ::-webkit-scrollbar-thumb {
-        background: #4b5563; /* gray-600 */
+        background: #4b5563;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #9ca3af; /* gray-400 */
+        background: #9ca3af;
       }
       
       html {
         scroll-behavior: smooth;
       }
 
-      /* --- UTILITIES --- */
-      /* Replaced glass-panel with standard card styles */
       .glass-panel {
         background-color: white;
-        border: 1px solid #e5e7eb; /* gray-200 */
+        border: 1px solid #e5e7eb;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       }
       
       .dark .glass-panel {
-        background-color: #1f2937; /* gray-800 */
-        border-color: #374151; /* gray-700 */
+        background-color: #1f2937;
+        border-color: #374151;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
       }
 
-      /* Hide scrollbar utility */
       .scrollbar-hide::-webkit-scrollbar {
           display: none;
       }
@@ -120,18 +114,21 @@
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
+    "vite": "https://esm.sh/vite@^7.3.1",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
     "gsap/": "https://esm.sh/gsap@^3.14.2/",
-    "gsap": "https://esm.sh/gsap@^3.14.2",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
+    "gsap": "https://esm.sh/gsap@^3.14.2"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
