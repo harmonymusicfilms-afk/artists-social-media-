@@ -107,12 +107,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const handleShare = async (e: React.MouseEvent, project: Project) => {
     e.stopPropagation();
-    const shareUrl = `https://artist.social/project/${project.id}`;
-    const shareData = { title: project.title, text: project.desc, url: shareUrl };
+    
+    // Construct a valid URL using the current origin to avoid "Invalid URL" errors
+    // Check for 'null' origin which happens in some sandboxed environments
+    let origin = 'https://artist.social';
+    if (typeof window !== 'undefined' && window.location.origin && window.location.origin !== 'null' && window.location.origin !== 'undefined') {
+        origin = window.location.origin;
+    }
+    const shareUrl = `${origin}/project/${project.id}`;
+    
+    const shareData = { 
+        title: project.title, 
+        text: project.desc, 
+        url: shareUrl 
+    };
+
     if (navigator.share) {
-      try { await navigator.share(shareData); } catch (err) { console.error(err); }
+      try { 
+        await navigator.share(shareData); 
+      } catch (err) { 
+        console.error("Share failed or was canceled:", err);
+      }
     } else {
-      try { await navigator.clipboard.writeText(shareUrl); alert(`Link copied to system clipboard.`); } catch (err) { console.error(err); }
+      try { 
+        await navigator.clipboard.writeText(shareUrl); 
+        alert(`Link copied to clipboard: ${shareUrl}`); 
+      } catch (err) { 
+        console.error("Clipboard failed:", err);
+        alert("Failed to copy link. Please try again.");
+      }
     }
   };
 
@@ -245,7 +268,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
              {isLoading ? (
                Array(4).fill(0).map((_, i) => (
-                 <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
+                 <div key={i} className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-800 animate-pulse border border-gray-200 dark:border-gray-700">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10" />
+                    <div className="absolute bottom-6 left-6 right-6 space-y-3">
+                        <div className="h-6 w-3/4 bg-gray-300 dark:bg-gray-700 rounded-md" />
+                        <div className="h-4 w-1/2 bg-gray-300 dark:bg-gray-700 rounded-md" />
+                    </div>
+                 </div>
                ))
              ) : (
                 [1,2,3,4].map((i) => (
@@ -272,9 +301,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {isLoading ? (
                Array(4).fill(0).map((_, i) => (
-                 <div key={i} className="h-72 rounded-2xl bg-white dark:bg-gray-800 p-6 flex flex-col justify-end shadow-sm">
-                    <Skeleton className="h-6 w-3/4 mb-3 rounded-md" />
-                    <Skeleton className="h-4 w-1/2 mb-4 rounded-md" />
+                 <div key={i} className="relative h-72 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-800 animate-pulse border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/5 dark:to-white/5" />
+                    <div className="absolute bottom-6 left-6 right-6 space-y-3">
+                        <div className="h-6 w-3/4 bg-gray-300 dark:bg-gray-700 rounded-md" />
+                        <div className="h-4 w-1/2 bg-gray-300 dark:bg-gray-700 rounded-md" />
+                    </div>
                 </div>
                ))
              ) : (
@@ -293,7 +325,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     
                     {/* Top Right Actions */}
                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-10px] group-hover:translate-y-0">
-                        <button onClick={(e) => toggleLike(e, project.id)} className={`p-2 rounded-full backdrop-blur-md ${likedProjects.includes(project.id) ? 'bg-red-500 text-white' : 'bg-black/50 text-white hover:bg-red-500'}`}>
+                        <button onClick={(e) => toggleLike(e, project.id)} className={`p-2 rounded-full backdrop-blur-md ${likedProjects.includes(project.id) ? 'bg-red-50 text-white' : 'bg-black/50 text-white hover:bg-red-500'}`}>
                             <Heart size={16} fill={likedProjects.includes(project.id) ? "currentColor" : "none"} />
                         </button>
                         <button onClick={(e) => handleShare(e, project)} className="p-2 bg-black/50 backdrop-blur-md hover:bg-brand-orange text-white rounded-full transition-colors">

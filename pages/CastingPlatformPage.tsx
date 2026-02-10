@@ -1,13 +1,16 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, MapPin, Mic, Clapperboard, Briefcase, Building, ArrowLeft } from 'lucide-react';
-import { CastingArtist, CastingProject } from '../types';
-import { MOCK_CASTING_ARTISTS, MOCK_CASTING_PROJECTS } from '../constants';
+import { CastingArtist, CastingProject, CastingAgency } from '../types';
+import { MOCK_CASTING_ARTISTS, MOCK_CASTING_AGENCIES } from '../constants';
 import { CastingArtistCard } from '../components/casting/ArtistCard';
 import { ProjectCard } from '../components/casting/ProjectCard';
+import { AgencyCard } from '../components/casting/AgencyCard';
 import { Skeleton } from '../components/ui/Skeleton';
 import { ArtistDetailModal } from '../components/casting/ArtistDetailModal';
 import { ProjectDetailModal } from '../components/casting/ProjectDetailModal';
 import { CastingFilters } from '../components/casting/CastingFilters';
+import { apiFetchCastingProjects } from '../lib/api';
 
 interface CastingPlatformPageProps {
   onNavigate: (page: string) => void;
@@ -19,6 +22,8 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
     
     const [selectedArtist, setSelectedArtist] = useState<CastingArtist | null>(null);
     const [selectedProject, setSelectedProject] = useState<CastingProject | null>(null);
+    
+    const [projects, setProjects] = useState<CastingProject[]>([]);
 
     const [filters, setFilters] = useState({
       keyword: '',
@@ -29,10 +34,14 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
     });
 
     useEffect(() => {
-        setIsLoading(true);
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, [activeTab, filters]);
+        const loadData = async () => {
+            setIsLoading(true);
+            const fetchedProjects = await apiFetchCastingProjects();
+            setProjects(fetchedProjects);
+            setIsLoading(false);
+        };
+        loadData();
+    }, []);
 
     const filteredArtists = useMemo(() => {
         return MOCK_CASTING_ARTISTS.filter(artist => {
@@ -47,7 +56,7 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
     }, [filters]);
 
     const filteredProjects = useMemo(() => {
-        return MOCK_CASTING_PROJECTS.filter(project => {
+        return projects.filter(project => {
              const keywordMatch = filters.keyword === '' || 
                                  project.title.toLowerCase().includes(filters.keyword.toLowerCase()) ||
                                  project.agency.toLowerCase().includes(filters.keyword.toLowerCase());
@@ -55,7 +64,24 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
             const typeMatch = filters.projectType === 'All' || project.type === filters.projectType;
             return keywordMatch && locationMatch && typeMatch;
         });
+    }, [filters, projects]);
+
+    const filteredAgencies = useMemo(() => {
+        return MOCK_CASTING_AGENCIES.filter(agency => {
+            const keywordMatch = filters.keyword === '' || 
+                                 agency.name.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+                                 agency.description.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+                                 agency.specialties.some(s => s.toLowerCase().includes(filters.keyword.toLowerCase()));
+            const locationMatch = filters.location === '' || agency.location.toLowerCase().includes(filters.location.toLowerCase());
+            return keywordMatch && locationMatch;
+        });
     }, [filters]);
+
+    // ... (Rest of the component logic for rendering tabs, etc.)
+
+    const handleContactAgency = (agency: CastingAgency) => {
+        alert(`Contact feature for ${agency.name} coming soon! \nPhone: ${agency.contact.phone}`);
+    };
 
     const tabs = [
         { name: 'Artists', icon: Mic },
@@ -65,15 +91,11 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
     ];
 
     const renderContent = () => {
-        if (isLoading) {
-            return (
-                <div className={`grid grid-cols-1 sm:grid-cols-2 ${activeTab === 'Artists' ? 'md:grid-cols-3 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'} gap-8`}>
-                    {Array(8).fill(0).map((_, i) => (
-                        <div key={i} className="space-y-4">
-                            <Skeleton className={`w-full ${activeTab === 'Artists' ? 'aspect-[3/4]' : 'h-48'} rounded-lg`} />
-                            <Skeleton className="h-5 w-3/4 rounded-md" />
-                            <Skeleton className="h-4 w-1/2 rounded-md" />
-                        </div>
+        if (isLoading && activeTab === 'Projects') { // Only show loading for fetched content or initial load
+             return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {Array(6).fill(0).map((_, i) => (
+                        <Skeleton key={i} className="h-48 w-full rounded-lg" />
                     ))}
                 </div>
             );
@@ -83,16 +105,33 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
             case 'Artists':
                 return (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                        {filteredArtists.map(artist => <CastingArtistCard key={artist.id} artist={artist} onViewProfile={() => setSelectedArtist(artist)} />)}
+                        {filteredArtists.length > 0 ? (
+                            filteredArtists.map(artist => <CastingArtistCard key={artist.id} artist={artist} onViewProfile={() => setSelectedArtist(artist)} />)
+                        ) : (
+                            <div className="col-span-full text-center py-20 text-gray-500">No artists found matching your criteria.</div>
+                        )}
                     </div>
                 );
             case 'Projects':
                 return (
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {filteredProjects.map(project => <ProjectCard key={project.id} project={project} onViewDetails={() => setSelectedProject(project)} />)}
+                        {filteredProjects.length > 0 ? (
+                            filteredProjects.map(project => <ProjectCard key={project.id} project={project} onViewDetails={() => setSelectedProject(project)} />)
+                        ) : (
+                            <div className="col-span-full text-center py-20 text-gray-500">No projects found matching your criteria.</div>
+                        )}
                     </div>
                 );
             case 'Agencies':
+                return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {filteredAgencies.length > 0 ? (
+                            filteredAgencies.map(agency => <AgencyCard key={agency.id} agency={agency} onContact={handleContactAgency} />)
+                        ) : (
+                            <div className="col-span-full text-center py-20 text-gray-500">No agencies found matching your criteria.</div>
+                        )}
+                    </div>
+                );
             case 'Studios':
                 return (
                     <div className="text-center py-20 text-casting-text-light">
@@ -138,7 +177,7 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
                             <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-casting-text-light" />
                             <input 
                               type="text" 
-                              placeholder="Search artists, roles..." 
+                              placeholder={activeTab === 'Agencies' ? "Search agencies, specialties..." : "Search artists, roles..."}
                               className="w-full pl-12 pr-4 py-3 bg-transparent focus:outline-none text-casting-text-dark" 
                               value={filters.keyword}
                               onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
@@ -185,7 +224,7 @@ export const CastingPlatformPage: React.FC<CastingPlatformPageProps> = ({ onNavi
                         })}
                     </div>
 
-                    {/* Filters */}
+                    {/* Filters - Only render for applicable tabs */}
                     <CastingFilters
                       activeTab={activeTab}
                       filters={filters}

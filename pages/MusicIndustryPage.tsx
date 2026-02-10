@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Music, Mic2, Speaker, Package, PenTool, Wrench, ShieldCheck, Phone, CheckCircle, UploadCloud, Plus, X, CreditCard, ShoppingCart, Tag, Clock, MapPin, Filter, User, Guitar, Disc, Settings2, Calendar } from 'lucide-react';
+import { ArrowLeft, Search, Music, Mic2, Speaker, Package, PenTool, Wrench, ShieldCheck, Phone, CheckCircle, UploadCloud, Plus, X, CreditCard, ShoppingCart, Tag, Clock, MapPin, Filter, User, Guitar, Disc, Settings2, Calendar, Video, Film, Play, Heart } from 'lucide-react';
 import { MOCK_MUSIC_PRODUCTS } from '../constants';
 import { MusicProduct, RepairRequest, Transaction, MusicCategory, RentalBooking } from '../types';
 
@@ -9,6 +10,48 @@ interface MusicIndustryPageProps {
 
 const UPI_ID = "7073741421@upi";
 const HELPLINE = "7073741421";
+
+// --- Types ---
+interface MusicMedia {
+    id: string;
+    title: string;
+    artist: string;
+    url: string;
+    thumbnail: string;
+    type: 'Video' | 'Audio';
+    likes: number;
+}
+
+// --- Mock Data ---
+const MOCK_MUSIC_MEDIA: MusicMedia[] = [
+    {
+        id: 'mm1',
+        title: 'Acoustic Soul Session',
+        artist: 'Rohan Guitarist',
+        url: 'https://www.youtube.com/watch?v=placeholder',
+        thumbnail: 'https://images.unsplash.com/photo-1510915361408-d59c9113f6f0?q=80&w=1000&auto=format&fit=crop',
+        type: 'Video',
+        likes: 124
+    },
+    {
+        id: 'mm2',
+        title: 'Drum Solo Improvisation',
+        artist: 'Beats by Ankit',
+        url: 'https://www.youtube.com/watch?v=placeholder',
+        thumbnail: 'https://images.unsplash.com/photo-1519892300165-cb5542fb4747?q=80&w=1000&auto=format&fit=crop',
+        type: 'Video',
+        likes: 89
+    },
+    {
+        id: 'mm3',
+        title: 'Original Track - "Midnight Rain"',
+        artist: 'Sarah Keys',
+        url: 'https://soundcloud.com/placeholder',
+        thumbnail: 'https://images.unsplash.com/photo-1514320291940-0e588f02695e?q=80&w=1000&auto=format&fit=crop',
+        type: 'Audio',
+        likes: 256
+    }
+];
 
 // --- Components ---
 
@@ -49,6 +92,30 @@ const ProductCard: React.FC<{ product: MusicProduct; onAction: (product: MusicPr
   </div>
 );
 
+const MediaCard: React.FC<{ media: MusicMedia }> = ({ media }) => (
+    <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 group cursor-pointer">
+        <div className="relative aspect-video bg-gray-100 dark:bg-gray-900">
+            <img src={media.thumbnail} alt={media.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                    {media.type === 'Video' ? <Play size={24} className="ml-1 text-black"/> : <Music size={24} className="text-black"/>}
+                </div>
+            </div>
+            <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold uppercase rounded backdrop-blur-sm">
+                {media.type}
+            </div>
+        </div>
+        <div className="p-4">
+            <h3 className="font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-brand-orange transition-colors">{media.title}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{media.artist}</p>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+                <span className="flex items-center gap-1"><Heart size={14} className="fill-current text-red-500"/> {media.likes} Likes</span>
+                <span className="text-brand-orange hover:underline">Watch Now</span>
+            </div>
+        </div>
+    </div>
+);
+
 const SellProductModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (product: MusicProduct) => void }> = ({ isOpen, onClose, onSave }) => {
     const [formData, setFormData] = useState<Partial<MusicProduct>>({
         name: '',
@@ -61,8 +128,37 @@ const SellProductModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
         location: '',
         status: 'Available'
     });
+    const [imageFile, setImageFile] = useState<File | null>(null);
+
+    // Reset form when opening
+    useEffect(() => {
+        if(isOpen) {
+            setFormData({
+                name: '',
+                category: 'Guitars',
+                price: 0,
+                type: 'Sale',
+                condition: 'Used',
+                image: '',
+                description: '',
+                location: '',
+                status: 'Available'
+            });
+            setImageFile(null);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+            // Create a preview URL
+            const previewUrl = URL.createObjectURL(file);
+            setFormData(prev => ({ ...prev, image: previewUrl }));
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -91,7 +187,7 @@ const SellProductModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">List Your Gear</h3>
                     <button onClick={onClose}><X size={20} className="text-gray-500" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Product Name</label>
                         <input type="text" required className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -146,11 +242,87 @@ const SellProductModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                             value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
-                        <input type="text" className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://..." />
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Product Image</label>
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            {formData.image ? (
+                                <img src={formData.image} alt="Preview" className="h-full object-contain" />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
+                                    <p className="text-xs text-gray-500">Click to upload image</p>
+                                </div>
+                            )}
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                        </label>
                     </div>
                     <button type="submit" className="w-full py-3 bg-brand-orange text-white font-bold rounded-xl shadow-lg hover:bg-opacity-90">List Item</button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const SubmitMediaModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (media: MusicMedia) => void }> = ({ isOpen, onClose, onSave }) => {
+    const [title, setTitle] = useState('');
+    const [artist, setArtist] = useState('');
+    const [url, setUrl] = useState('');
+    const [type, setType] = useState<'Video' | 'Audio'>('Video');
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const newMedia: MusicMedia = {
+            id: `media-${Date.now()}`,
+            title,
+            artist,
+            url,
+            thumbnail: 'https://picsum.photos/seed/musicvideo/400/225', // Mock thumbnail
+            type,
+            likes: 0
+        };
+        onSave(newMedia);
+        onClose();
+        setTitle('');
+        setArtist('');
+        setUrl('');
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-zoom-in">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Submit Your Music</h3>
+                    <button onClick={onClose}><X size={20} className="text-gray-500" /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Track/Video Title</label>
+                        <input type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="e.g. Summer Vibes" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Artist Name</label>
+                        <input type="text" required value={artist} onChange={e => setArtist(e.target.value)} className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="e.g. DJ Cool" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Link (YouTube/SoundCloud)</label>
+                        <input type="url" required value={url} onChange={e => setUrl(e.target.value)} className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="https://..." />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" checked={type === 'Video'} onChange={() => setType('Video')} className="text-brand-orange focus:ring-brand-orange" />
+                                <span className="text-sm dark:text-gray-300">Video</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" checked={type === 'Audio'} onChange={() => setType('Audio')} className="text-brand-orange focus:ring-brand-orange" />
+                                <span className="text-sm dark:text-gray-300">Audio</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" className="w-full py-3 bg-brand-orange text-white font-bold rounded-xl shadow-lg hover:bg-opacity-90">Submit</button>
                 </form>
             </div>
         </div>
@@ -269,7 +441,7 @@ const PaymentModal: React.FC<{
 };
 
 export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<'Store' | 'Rent' | 'Repair' | 'Admin'>('Store');
+  const [activeTab, setActiveTab] = useState<'Store' | 'Rent' | 'Repair' | 'Admin' | 'Media'>('Store');
   const [adminTab, setAdminTab] = useState<'Transactions' | 'Products' | 'Rentals' | 'Repairs'>('Transactions');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'All' | 'New' | 'Used'>('All');
@@ -296,16 +468,23 @@ export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate
       return saved ? JSON.parse(saved) : [];
   });
 
+  const [musicMedia, setMusicMedia] = useState<MusicMedia[]>(() => {
+      const saved = localStorage.getItem('music_media');
+      return saved ? JSON.parse(saved) : MOCK_MUSIC_MEDIA;
+  });
+
   // Persist State
   useEffect(() => { localStorage.setItem('music_products', JSON.stringify(products)); }, [products]);
   useEffect(() => { localStorage.setItem('music_transactions', JSON.stringify(transactions)); }, [transactions]);
   useEffect(() => { localStorage.setItem('music_repairs', JSON.stringify(repairRequests)); }, [repairRequests]);
   useEffect(() => { localStorage.setItem('music_rentals', JSON.stringify(rentals)); }, [rentals]);
+  useEffect(() => { localStorage.setItem('music_media', JSON.stringify(musicMedia)); }, [musicMedia]);
 
   // Modal States
   const [selectedProduct, setSelectedProduct] = useState<MusicProduct | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [isSubmitMediaModalOpen, setIsSubmitMediaModalOpen] = useState(false);
   
   // Repair Form State
   const [repairForm, setRepairForm] = useState({ item: '', issue: '', contact: '' });
@@ -365,6 +544,10 @@ export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate
       setProducts(prev => [newProduct, ...prev]);
   };
 
+  const handleSubmitMedia = (newMedia: MusicMedia) => {
+      setMusicMedia(prev => [newMedia, ...prev]);
+  };
+
   // Admin Actions
   const approveTransaction = (id: string) => {
       setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: 'Verified' } : t));
@@ -409,6 +592,11 @@ export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate
                         <Plus size={20} /> Sell Gear
                     </button>
                 )}
+                {activeTab === 'Media' && (
+                    <button onClick={() => setIsSubmitMediaModalOpen(true)} className="flex items-center gap-2 bg-brand-orange text-white px-5 py-2.5 rounded-full shadow-md font-bold hover:bg-opacity-90">
+                        <UploadCloud size={20} /> Submit Music
+                    </button>
+                )}
                 <div className="flex items-center gap-3 bg-white dark:bg-gray-800 px-5 py-2.5 rounded-full shadow-md border border-gray-200 dark:border-gray-700">
                     <Phone size={20} className="text-green-600 animate-pulse" />
                     <div>
@@ -421,7 +609,7 @@ export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate
 
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2 mb-8 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 w-fit mx-auto md:mx-0">
-            {['Store', 'Rent', 'Repair', 'Admin'].map(tab => (
+            {['Store', 'Rent', 'Repair', 'Media', 'Admin'].map(tab => (
                 <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
@@ -434,6 +622,7 @@ export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate
                     {tab === 'Store' && <ShoppingCart size={16} className="inline mr-2" />}
                     {tab === 'Rent' && <Clock size={16} className="inline mr-2" />}
                     {tab === 'Repair' && <Wrench size={16} className="inline mr-2" />}
+                    {tab === 'Media' && <Video size={16} className="inline mr-2" />}
                     {tab === 'Admin' && <ShieldCheck size={16} className="inline mr-2" />}
                     {tab}
                 </button>
@@ -577,6 +766,24 @@ export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate
                 </div>
             )}
 
+            {/* MEDIA VIEW */}
+            {activeTab === 'Media' && (
+                <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {musicMedia.map(media => (
+                            <MediaCard key={media.id} media={media} />
+                        ))}
+                    </div>
+                    {musicMedia.length === 0 && (
+                        <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                            <Music size={48} className="mx-auto text-gray-300 mb-4" />
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">No Media Found</h3>
+                            <p className="text-gray-500">Be the first to share your music!</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* ADMIN VIEW */}
             {activeTab === 'Admin' && (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -698,6 +905,12 @@ export const MusicIndustryPage: React.FC<MusicIndustryPageProps> = ({ onNavigate
         isOpen={isSellModalOpen}
         onClose={() => setIsSellModalOpen(false)}
         onSave={handleAddProduct}
+      />
+
+      <SubmitMediaModal
+        isOpen={isSubmitMediaModalOpen}
+        onClose={() => setIsSubmitMediaModalOpen(false)}
+        onSave={handleSubmitMedia}
       />
     </div>
   );

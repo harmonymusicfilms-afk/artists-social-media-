@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { User } from '../types';
-import { Eye, EyeOff, ArrowRight, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Lock, Mail, User as UserIcon, Loader2 } from 'lucide-react';
 
 interface AuthPageProps {
   onLoginSuccess: () => void;
@@ -10,7 +9,7 @@ interface AuthPageProps {
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   
   // Form State
   const [email, setEmail] = useState('');
@@ -20,47 +19,47 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
+    setIsLoading(true);
 
     if (!email || !password) {
       setError('Credentials required.');
+      setIsLoading(false);
       return;
     }
 
     if (!isLogin && !name) {
       setError('Name required.');
+      setIsLoading(false);
       return;
     }
 
-    // Mock API Call simulation
-    setTimeout(() => {
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        email,
-        name: isLogin ? (email.split('@')[0]) : name,
-        preferences: {
-          privacy: {
-            mobile: false, whatsapp: false, email: true, address: false, publicProfile: true
-          },
-          theme: 'light'
-        }
-      };
-
-      if (!isLogin) {
-        setSuccessMsg('Account created. Logging in...');
-        setTimeout(() => {
-           login(email, newUser);
-           onLoginSuccess();
-        }, 1500);
-      } else {
-        login(email, newUser);
+    try {
+      if (isLogin) {
+        const { error } = await login(email, password);
+        if (error) throw error;
         onLoginSuccess();
+      } else {
+        const { error } = await signup(email, password, name);
+        if (error) throw error;
+        setSuccessMsg('Account created! Please check your email to confirm registration or login if auto-confirmed.');
+        // Auto login might happen depending on Supabase settings, but usually requires email confirm
+        // For simple flows, we can try to login immediately or just switch to login view
+        setTimeout(() => {
+             setIsLogin(true);
+             setSuccessMsg('');
+        }, 3000);
       }
-    }, 800);
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -112,6 +111,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                     onChange={(e) => setName(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all text-white placeholder-gray-600 font-mono text-sm"
                     placeholder="John Doe"
+                    disabled={isLoading}
                     />
                 </div>
               </div>
@@ -127,6 +127,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all text-white placeholder-gray-600 font-mono text-sm"
                     placeholder="user@example.com"
+                    disabled={isLoading}
                 />
               </div>
             </div>
@@ -141,6 +142,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all text-white placeholder-gray-600 font-mono text-sm"
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
                 <button 
                   type="button"
@@ -154,10 +156,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
 
             <button 
               type="submit"
-              className="w-full py-4 mt-4 bg-brand-orange text-black font-bold uppercase tracking-widest rounded-lg shadow-[0_0_20px_rgba(0,242,255,0.4)] hover:bg-white hover:shadow-[0_0_30px_rgba(0,242,255,0.6)] transition-all duration-300 flex items-center justify-center gap-2 group text-sm"
+              disabled={isLoading}
+              className="w-full py-4 mt-4 bg-brand-orange text-black font-bold uppercase tracking-widest rounded-lg shadow-[0_0_20px_rgba(0,242,255,0.4)] hover:bg-white hover:shadow-[0_0_30px_rgba(0,242,255,0.6)] transition-all duration-300 flex items-center justify-center gap-2 group text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLogin ? 'Login' : 'Sign Up'}
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              {isLoading ? <Loader2 className="animate-spin" /> : (isLogin ? 'Login' : 'Sign Up')}
+              {!isLoading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
             </button>
           </form>
 
@@ -167,6 +170,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
               <button 
                 onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }}
                 className="text-brand-orange font-bold hover:text-white transition-colors ml-1"
+                disabled={isLoading}
               >
                 {isLogin ? 'Sign Up' : 'Login'}
               </button>

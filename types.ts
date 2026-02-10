@@ -1,13 +1,13 @@
 
 export enum PlatformRole {
     JobSeeker = "Job Seeker",
-    Employer = "Employer / Job Provider",
+    Employer = "Employer",
     Artist = "Artist",
     PerformingArtsTeacher = "Performing Arts Teacher",
-    Institute = "Institute / School",
+    Institute = "Institute/School",
     WomanEntrepreneur = "Woman Entrepreneur",
-    Student = "Student",
-    TrainerCoach = "Trainer / Coach",
+    Student = "Student/Learner",
+    TrainerCoach = "Trainer/Coach",
     Astrologer = "Astrologer",
     NGOMember = "NGO Member",
     DigitalWorker = "Digital Worker",
@@ -59,8 +59,10 @@ export interface User {
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, user: User) => void;
-  logout: () => void;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ error: any }>;
+  signup: (email: string, password: string, name: string) => Promise<{ error: any }>;
+  logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   updatePreferences: (prefs: Partial<User['preferences']>) => void;
 }
@@ -127,6 +129,9 @@ export interface UserProfile {
   isVerified: boolean;
   weTubeVerificationStatus: 'unverified' | 'pending' | 'verified';
   status: 'online' | string; // 'online' or a last seen timestamp like '5m ago'
+  joinedDate: string;
+  rating?: number;
+  reviewCount?: number;
 
   // A. Personal Details
   fullName: string;
@@ -140,6 +145,7 @@ export interface UserProfile {
     country: string;
     state: string;
     city: string;
+    pincode?: string;
   };
 
   // C. Professional Details
@@ -231,6 +237,22 @@ export interface CastingProject {
     gender: string;
     skills: string[];
   };
+}
+
+export interface CastingAgency {
+  id: string;
+  name: string;
+  location: string;
+  image: string;
+  description: string;
+  specialties: string[];
+  contact: {
+      email: string;
+      phone: string;
+      website: string;
+  };
+  rating: number;
+  verified: boolean;
 }
 
 // --- MLM PLATFORM DATA MODELS ---
@@ -427,6 +449,28 @@ export interface Category {
   icon: string;
   desc: string;
   details: string;
-  category: "Services" | "Business" | "Community" | "Learning";
+  category: "Services" | "Business" | "Community" | "Learning" | "Entertainment";
   path?: string;
+}
+
+// --- DETAILED JOB MARKETPLACE MODELS ---
+export interface MockFreelancer {
+  id: string;
+  name: string;
+  title: string;
+  avatar: string;
+  rating: number;
+  hourlyRate: string;
+  skills: string[];
+}
+
+export interface JobCategoryExtended {
+  id: number;
+  title: string;
+  icon: string; // Lucide icon name
+  skillsPreview: string; // Comma separated for card view
+  subtitle: string;
+  fullDefinition: string;
+  services: string[];
+  sampleFreelancers: MockFreelancer[];
 }

@@ -1,9 +1,11 @@
+
 import React, { useState, useMemo } from 'react';
 import { MLMPost } from '../../types';
 import { MoreVertical, Heart, MessageSquare, Share2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MLMPostCardProps {
     post: MLMPost;
+    onChat?: (userId: string) => void;
 }
 
 const getYouTubeEmbedUrl = (url: string) => {
@@ -21,7 +23,7 @@ const getYouTubeEmbedUrl = (url: string) => {
     return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
 };
 
-export const MLMPostCard: React.FC<MLMPostCardProps> = ({ post }) => {
+export const MLMPostCard: React.FC<MLMPostCardProps> = ({ post, onChat }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const [isLiked, setIsLiked] = useState(false);
@@ -48,11 +50,11 @@ export const MLMPostCard: React.FC<MLMPostCardProps> = ({ post }) => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow duration-300">
             {/* Header */}
             <div className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <img src={post.profile.avatar} alt={post.profile.displayName} className="w-12 h-12 rounded-full" />
+                    <img src={post.profile.avatar} alt={post.profile.displayName} className="w-12 h-12 rounded-full border border-gray-100 dark:border-gray-700 object-cover" />
                     <div>
                         <p className="font-bold text-gray-900 dark:text-white">{post.profile.displayName}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{post.profile.mlm?.level} Member · {post.createdAt}</p>
@@ -101,8 +103,8 @@ export const MLMPostCard: React.FC<MLMPostCardProps> = ({ post }) => {
                     {/* Navigation Arrows */}
                     {mediaItems.length > 1 && (
                         <>
-                            <button onClick={prevMedia} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover/media:opacity-100 transition-opacity z-20"><ChevronLeft /></button>
-                            <button onClick={nextMedia} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover/media:opacity-100 transition-opacity z-20"><ChevronRight /></button>
+                            <button onClick={prevMedia} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover/media:opacity-100 transition-opacity z-20 hover:bg-black/70"><ChevronLeft size={20} /></button>
+                            <button onClick={nextMedia} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover/media:opacity-100 transition-opacity z-20 hover:bg-black/70"><ChevronRight size={20} /></button>
                         </>
                     )}
 
@@ -125,11 +127,13 @@ export const MLMPostCard: React.FC<MLMPostCardProps> = ({ post }) => {
 
             {/* PDF Attachment */}
             {post.pdfUrl && (
-                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
-                    <a href={post.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm font-semibold text-brand-orange hover:text-brand-orange/80 transition-colors group">
+                <div className="px-4 py-3 bg-red-50 dark:bg-red-900/10 border-t border-b border-gray-100 dark:border-gray-700">
+                    <a href={post.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between text-sm font-semibold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors group">
                         <span className="flex items-center gap-2">
-                           <Download size={16} />
-                           Download Plan Details (PDF)
+                           <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                                <Download size={16} />
+                           </div>
+                           Download Plan Document (PDF)
                         </span>
                         <ChevronRight size={18} className="transform group-hover:translate-x-1 transition-transform" />
                     </a>
@@ -144,7 +148,10 @@ export const MLMPostCard: React.FC<MLMPostCardProps> = ({ post }) => {
                 >
                     <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} /> {post.stats.likes + (isLiked ? 1 : 0)} Likes
                 </button>
-                 <button className="flex items-center gap-2 text-sm font-semibold hover:text-brand-green transition-colors">
+                 <button 
+                    onClick={() => onChat && onChat(post.profile.id)}
+                    className="flex items-center gap-2 text-sm font-semibold hover:text-brand-green transition-colors"
+                >
                     <MessageSquare size={20} /> Chat
                 </button>
                 <button onClick={() => alert('Feature coming soon!')} className="flex items-center gap-2 text-sm font-semibold hover:text-blue-500 transition-colors">

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Job } from '../types';
-import { MapPin, Clock, Briefcase, Heart, Star } from 'lucide-react';
+import { MapPin, Clock, Briefcase, Bookmark, Star } from 'lucide-react';
 
 interface JobCardProps {
   job: Job;
@@ -75,12 +75,13 @@ export const JobCard: React.FC<JobCardProps> = ({ job, variant = 'vertical', onC
             onClick={(e) => onSave(e, job.id)}
             className={`p-2 rounded-full transition-colors -mr-2 -mt-2 z-10 relative
               ${isSaved 
-                ? 'text-red-500 bg-red-50 dark:bg-red-900/20' 
+                ? 'text-brand-orange bg-orange-50 dark:bg-orange-900/20' 
                 : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }
             `}
+            title={isSaved ? "Unsave Job" : "Save Job"}
           >
-            <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
+            <Bookmark size={18} fill={isSaved ? "currentColor" : "none"} />
           </button>
         )}
       </div>

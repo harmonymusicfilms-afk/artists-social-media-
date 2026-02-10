@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Video, Comment } from '../../types';
-import { X, Play, Volume2, VolumeX, Heart, MessageSquare, Share2, MoreVertical, Loader2, AlertTriangle, ThumbsDown, Music, Plus, Smile, Send, Maximize, Minimize, Disc } from 'lucide-react';
+import { X, Play, Volume2, VolumeX, Heart, MessageSquare, Share2, MoreVertical, Loader2, AlertTriangle, ThumbsDown, Music, Plus, Smile, Send, Maximize, Minimize, Disc, FastForward, Rewind } from 'lucide-react';
 import { MOCK_COMMENTS, CURRENT_USER_PROFILE } from '../../constants';
 
 interface ShortsPlayerProps {
@@ -159,7 +159,11 @@ const ShortItem: React.FC<{
     const [isPlaying, setIsPlaying] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isBuffering, setIsBuffering] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [showSeekBack, setShowSeekBack] = useState(false);
+    const [showSeekForward, setShowSeekForward] = useState(false);
 
     // Interaction State
     const [isLiking, setIsLiking] = useState(false); 
@@ -174,7 +178,6 @@ const ShortItem: React.FC<{
         const video = videoRef.current;
         if (video) {
             video.play().then(() => setIsPlaying(true)).catch(e => {
-                // Auto-play might be blocked, mute and try again
                 if (e.name === 'NotAllowedError') {
                     setIsMuted(true);
                     video.muted = true;
@@ -195,12 +198,17 @@ const ShortItem: React.FC<{
         }
     };
 
+    const togglePlay = () => isPlaying ? handlePause() : handlePlay();
+
     useEffect(() => {
         if (isVisible) {
             handlePlay();
         } else {
             handlePause();
-            if (videoRef.current) videoRef.current.currentTime = 0;
+            if (videoRef.current) {
+                videoRef.current.currentTime = 0;
+                setProgress(0);
+            }
         }
     }, [isVisible]);
 
@@ -212,8 +220,30 @@ const ShortItem: React.FC<{
         document.addEventListener("visibilitychange", handleVisibilityChange);
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, [isVisible]);
-    
-    const togglePlay = () => isPlaying ? handlePause() : handlePlay();
+
+    const handleTimeUpdate = () => {
+        if (videoRef.current) {
+            const current = videoRef.current.currentTime;
+            const duration = videoRef.current.duration;
+            if (duration) {
+                setProgress((current / duration) * 100);
+            }
+        }
+    };
+
+    const handleSeek = (direction: 'forward' | 'backward') => {
+        if (videoRef.current) {
+            const newTime = videoRef.current.currentTime + (direction === 'forward' ? 5 : -5);
+            videoRef.current.currentTime = Math.max(0, Math.min(newTime, videoRef.current.duration));
+            if (direction === 'forward') {
+                setShowSeekForward(true);
+                setTimeout(() => setShowSeekForward(false), 500);
+            } else {
+                setShowSeekBack(true);
+                setTimeout(() => setShowSeekBack(false), 500);
+            }
+        }
+    };
     
     const handleLikeToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -262,7 +292,7 @@ const ShortItem: React.FC<{
 
 
     return (
-        <div className="w-full h-full relative snap-start flex items-center justify-center bg-black">
+        <div className="w-full h-full relative snap-start flex items-center justify-center bg-black group/short">
             <video
                 ref={videoRef}
                 src={short.mediaUrl}
@@ -270,39 +300,71 @@ const ShortItem: React.FC<{
                 playsInline
                 muted={isMuted}
                 className="w-full h-full object-cover"
-                onClick={togglePlay}
                 onCanPlay={() => { setIsLoading(false); setHasError(false); }}
-                onWaiting={() => setIsLoading(true)}
-                onPlaying={() => setIsLoading(false)}
+                onWaiting={() => setIsBuffering(true)}
+                onPlaying={() => setIsBuffering(false)}
+                onTimeUpdate={handleTimeUpdate}
                 onError={() => { setIsLoading(false); setHasError(true); }}
             />
 
             {hasError && (
-                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 p-4 text-center">
+                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 p-4 text-center z-30">
                     <AlertTriangle size={48} className="text-red-500 mb-4" />
                     <h3 className="text-lg font-bold text-white">Video Unavailable</h3>
                     <p className="text-sm text-gray-300">This video may have been removed or is restricted.</p>
                  </div>
             )}
-            {isLoading && !hasError && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            
+            {(isLoading || isBuffering) && !hasError && (
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
                     <Loader2 size={48} className="text-white/80 animate-spin" />
                  </div>
             )}
+
             {!isPlaying && !isLoading && !hasError && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/20" onClick={togglePlay}>
-                     <div className="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm cursor-pointer animate-zoom-in">
+                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20 pointer-events-none">
+                     <div className="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm animate-zoom-in">
                         <Play size={48} className="text-white/80 fill-white/80 ml-1" />
                      </div>
                  </div>
+            )}
+
+            {/* Seek Animations */}
+            {showSeekBack && (
+                <div className="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none text-white animate-pulse z-30">
+                    <div className="flex"><Rewind size={40} fill="white" /><Rewind size={40} fill="white" className="-ml-6 opacity-50" /></div>
+                    <span className="text-sm font-bold mt-2">-5s</span>
+                </div>
+            )}
+            {showSeekForward && (
+                <div className="absolute right-10 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none text-white animate-pulse z-30">
+                    <div className="flex"><FastForward size={40} fill="white" className="opacity-50" /><FastForward size={40} fill="white" className="-ml-6" /></div>
+                    <span className="text-sm font-bold mt-2">+5s</span>
+                </div>
             )}
             
             {!hasError && (
               <div className="absolute inset-0 text-white pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                 
+                {/* Interaction Zones */}
+                <div 
+                    className="absolute inset-y-0 left-0 w-[30%] z-10 pointer-events-auto"
+                    onDoubleClick={(e) => { e.stopPropagation(); handleSeek('backward'); }}
+                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                />
+                <div 
+                    className="absolute inset-y-0 right-0 w-[30%] z-10 pointer-events-auto"
+                    onDoubleClick={(e) => { e.stopPropagation(); handleSeek('forward'); }}
+                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                />
+                <div 
+                    className="absolute inset-y-0 left-[30%] right-[30%] z-10 pointer-events-auto"
+                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                />
+
                 {/* Top Controls */}
-                <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start pointer-events-auto">
+                <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start pointer-events-auto z-20">
                     <button onClick={onClose} className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition-colors">
                         <X size={24} />
                     </button>
@@ -317,7 +379,7 @@ const ShortItem: React.FC<{
                 </div>
 
                 {/* Bottom Info Area */}
-                <div className="absolute bottom-0 left-0 p-4 pb-8 flex items-end max-w-[calc(100%-80px)]">
+                <div className="absolute bottom-0 left-0 p-4 pb-12 flex items-end max-w-[calc(100%-80px)] z-20">
                     <div className="flex-1 space-y-4 self-end pointer-events-auto">
                         <div className="flex items-center gap-3 cursor-pointer group" onClick={handleChannelClick}>
                             <span className="font-bold text-lg drop-shadow-md group-hover:underline">@{short.creator.name}</span>
@@ -356,8 +418,16 @@ const ShortItem: React.FC<{
                     </div>
                 </div>
 
+                {/* Progress Bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-600/50 z-20">
+                    <div 
+                        className="h-full bg-red-600 transition-all duration-100 ease-linear"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+
                 {/* Vertical Floating Control Bar */}
-                <div className="absolute bottom-8 right-2 z-20 flex flex-col items-center gap-6 pointer-events-auto">
+                <div className="absolute bottom-12 right-2 z-20 flex flex-col items-center gap-6 pointer-events-auto">
                     {/* Creator Avatar */}
                     <div className="relative group cursor-pointer" onClick={handleChannelClick}>
                         <img src={short.creator.avatar} className="w-12 h-12 rounded-full border-2 border-white object-cover shadow-lg transition-transform group-hover:scale-110" />

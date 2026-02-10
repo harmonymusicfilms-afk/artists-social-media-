@@ -30,6 +30,7 @@ const CustomVideoPlayer = ({ video, toggleFullscreen, isFullscreen }: { video: V
     const [showSeekBack, setShowSeekBack] = useState(false);
     const [showSeekForward, setShowSeekForward] = useState(false);
     const [showPlayPauseAnim, setShowPlayPauseAnim] = useState(false);
+    const [progress, setProgress] = useState(0);
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -44,10 +45,20 @@ const CustomVideoPlayer = ({ video, toggleFullscreen, isFullscreen }: { video: V
         }
     };
 
+    const handleTimeUpdate = () => {
+        if (videoRef.current) {
+            const current = videoRef.current.currentTime;
+            const duration = videoRef.current.duration;
+            if (duration) {
+                setProgress((current / duration) * 100);
+            }
+        }
+    };
+
     const handleSeek = (direction: 'forward' | 'backward') => {
         if (videoRef.current) {
             const newTime = videoRef.current.currentTime + (direction === 'forward' ? 5 : -5);
-            videoRef.current.currentTime = newTime;
+            videoRef.current.currentTime = Math.max(0, Math.min(newTime, videoRef.current.duration));
             if (direction === 'forward') {
                 setShowSeekForward(true);
                 setTimeout(() => setShowSeekForward(false), 500);
@@ -58,8 +69,19 @@ const CustomVideoPlayer = ({ video, toggleFullscreen, isFullscreen }: { video: V
         }
     };
 
+    const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (videoRef.current) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const width = rect.width;
+            const percentage = Math.max(0, Math.min(1, x / width));
+            videoRef.current.currentTime = percentage * videoRef.current.duration;
+        }
+    };
+
     return (
-        <div className="relative w-full h-full bg-black group select-none">
+        <div className="relative w-full h-full bg-black group select-none flex flex-col justify-center">
             <video
                 ref={videoRef}
                 src={video.mediaUrl}
@@ -70,19 +92,20 @@ const CustomVideoPlayer = ({ video, toggleFullscreen, isFullscreen }: { video: V
                 onPause={() => setIsPlaying(false)}
                 onWaiting={() => setIsBuffering(true)}
                 onPlaying={() => setIsBuffering(false)}
+                onTimeUpdate={handleTimeUpdate}
                 onClick={togglePlay}
             />
 
             {/* Buffering Loader */}
             {isBuffering && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
                     <Loader2 size={48} className="text-white animate-spin opacity-80" />
                 </div>
             )}
 
             {/* Play/Pause Animation Overlay */}
             {showPlayPauseAnim && !isBuffering && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-zoom-in">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-zoom-in z-30">
                     <div className="bg-black/40 rounded-full p-4 backdrop-blur-sm">
                         {isPlaying ? <Play size={32} className="text-white fill-white" /> : <div className="h-8 w-8 flex items-center justify-center"><div className="w-1 h-6 bg-white rounded-full mx-1"></div><div className="w-1 h-6 bg-white rounded-full mx-1"></div></div>}
                     </div>
@@ -91,13 +114,13 @@ const CustomVideoPlayer = ({ video, toggleFullscreen, isFullscreen }: { video: V
 
             {/* Seek Animations */}
             {showSeekBack && (
-                <div className="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none text-white animate-pulse">
+                <div className="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none text-white animate-pulse z-30">
                     <div className="flex"><Rewind size={32} fill="white" /><Rewind size={32} fill="white" className="-ml-4 opacity-50" /></div>
                     <span className="text-xs font-bold mt-1">-5s</span>
                 </div>
             )}
             {showSeekForward && (
-                <div className="absolute right-10 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none text-white animate-pulse">
+                <div className="absolute right-10 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none text-white animate-pulse z-30">
                     <div className="flex"><FastForward size={32} fill="white" className="opacity-50" /><FastForward size={32} fill="white" className="-ml-4" /></div>
                     <span className="text-xs font-bold mt-1">+5s</span>
                 </div>
@@ -105,18 +128,17 @@ const CustomVideoPlayer = ({ video, toggleFullscreen, isFullscreen }: { video: V
 
             {/* Interactive Zones for Seek (Double Tap) */}
             <div 
-                className="absolute inset-y-0 left-0 w-[35%] z-10"
+                className="absolute inset-y-0 left-0 w-[30%] z-10"
                 onDoubleClick={(e) => { e.stopPropagation(); handleSeek('backward'); }}
-                onClick={(e) => { e.stopPropagation(); togglePlay(); }} // Fallback for single click
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
             />
             <div 
-                className="absolute inset-y-0 right-0 w-[35%] z-10"
+                className="absolute inset-y-0 right-0 w-[30%] z-10"
                 onDoubleClick={(e) => { e.stopPropagation(); handleSeek('forward'); }}
-                onClick={(e) => { e.stopPropagation(); togglePlay(); }} // Fallback for single click
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
             />
-            {/* Center Zone for Play/Pause */}
             <div 
-                className="absolute inset-y-0 left-[35%] right-[35%] z-10 flex items-center justify-center"
+                className="absolute inset-y-0 left-[30%] right-[30%] z-10 flex items-center justify-center"
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             >
                 {!isPlaying && !isBuffering && (
@@ -126,10 +148,23 @@ const CustomVideoPlayer = ({ video, toggleFullscreen, isFullscreen }: { video: V
                 )}
             </div>
 
+            {/* Progress Bar */}
+            <div 
+                className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-600/50 cursor-pointer z-20 group-hover:h-2 transition-all"
+                onClick={handleProgressBarClick}
+            >
+                <div 
+                    className="h-full bg-red-600 transition-all duration-100 ease-linear relative"
+                    style={{ width: `${progress}%` }}
+                >
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full scale-0 group-hover:scale-100 transition-transform shadow-sm" />
+                </div>
+            </div>
+
             {/* Fullscreen Toggle */}
             <button 
                 onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-                className="absolute bottom-4 right-4 z-20 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-black/70 transition-all"
+                className="absolute bottom-6 right-4 z-20 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-black/70 transition-all"
                 title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
             >
                 {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}

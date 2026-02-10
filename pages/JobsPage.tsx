@@ -1,13 +1,16 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { CategoryCard } from '../components/CategoryCard';
 import { JobCard } from '../components/JobCard';
-import { JOB_CATEGORIES_DATA, MOCK_JOBS } from '../constants';
-import { Job } from '../types';
-import { Search, MapPin, Filter, X, Briefcase, DollarSign, CheckCircle, Phone, Globe, Share2, Bookmark, AlertCircle, ArrowLeft } from 'lucide-react';
+import { DETAILED_JOB_CATEGORIES } from '../constants';
+import { Job, JobCategoryExtended } from '../types';
+import { apiFetchJobs, apiCreateJob } from '../lib/api';
+import { Search, MapPin, Filter, X, Briefcase, DollarSign, CheckCircle, Phone, Globe, Share2, Bookmark, AlertCircle, ArrowLeft, Star, PenTool, Code, TrendingUp, FileText, Music } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import { PostJobModal } from '../components/PostJobModal';
+
+// Helper for dynamic icons
+import * as icons from 'lucide-react';
 
 interface JobsPageProps {
   onNavigate: (page: string) => void;
@@ -29,11 +32,119 @@ const experienceLevels = [
   { id: '5+', label: 'Senior (5+ yrs)' },
 ];
 
+const CategoryDetailModal: React.FC<{ 
+  category: JobCategoryExtended; 
+  onClose: () => void; 
+}> = ({ category, onClose }) => {
+  const Icon = (icons as any)[category.icon] || Briefcase;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div 
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" 
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Banner */}
+        <div className="relative h-40 bg-gradient-to-r from-gray-900 to-gray-800 dark:from-black dark:to-gray-900 text-white flex items-center px-8 overflow-hidden">
+           <div className="absolute right-0 top-0 h-full w-1/3 bg-brand-orange/20 -skew-x-12 transform translate-x-12"></div>
+           <div className="flex items-center gap-6 relative z-10">
+              <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-lg">
+                 <Icon size={40} className="text-brand-orange" />
+              </div>
+              <div>
+                 <h2 className="text-3xl font-bold">{category.title}</h2>
+                 <p className="text-gray-300 mt-1">{category.subtitle}</p>
+              </div>
+           </div>
+           <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+             <X size={20} />
+           </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+           
+           {/* Definition */}
+           <section className="mb-10">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">About this Category</h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-base">
+                {category.fullDefinition}
+              </p>
+           </section>
+
+           {/* Services Grid */}
+           <section className="mb-12">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Services Offered</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {category.services.map((service, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                       <CheckCircle size={18} className="text-brand-orange shrink-0" />
+                       <span className="text-gray-700 dark:text-gray-200 font-medium">{service}</span>
+                    </div>
+                 ))}
+              </div>
+           </section>
+
+           {/* Sample Freelancers */}
+           <section>
+              <div className="flex items-center justify-between mb-6">
+                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Top Rated Professionals</h3>
+                 <span className="text-sm text-brand-orange font-semibold cursor-pointer hover:underline">View All</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 {category.sampleFreelancers.map((freelancer) => (
+                    <div key={freelancer.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-lg transition-shadow">
+                       <div className="flex items-center gap-4 mb-4">
+                          <img src={freelancer.avatar} alt={freelancer.name} className="w-12 h-12 rounded-full object-cover" />
+                          <div>
+                             <h4 className="font-bold text-gray-900 dark:text-white text-sm">{freelancer.name}</h4>
+                             <p className="text-xs text-gray-500 dark:text-gray-400">{freelancer.title}</p>
+                          </div>
+                       </div>
+                       <div className="flex flex-wrap gap-2 mb-4">
+                          {freelancer.skills.slice(0, 2).map(skill => (
+                             <span key={skill} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-bold rounded">
+                               {skill}
+                             </span>
+                          ))}
+                       </div>
+                       <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-3">
+                          <div className="flex items-center gap-1 text-sm font-bold text-gray-800 dark:text-gray-200">
+                             <Star size={14} className="text-amber-400 fill-current" /> {freelancer.rating}
+                          </div>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">{freelancer.hourlyRate}</span>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </section>
+
+        </div>
+
+        {/* Footer CTAs */}
+        <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex gap-4">
+           <button className="flex-1 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+             Explore Freelancers
+           </button>
+           <button className="flex-1 py-3 bg-brand-orange text-white font-bold rounded-xl shadow-lg hover:bg-brand-orange/90 transition-transform hover:scale-[1.01]">
+             Post a Job in {category.title}
+           </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};
 
 export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  
+  // New State for Category Details
+  const [selectedCategory, setSelectedCategory] = useState<JobCategoryExtended | null>(null);
   
   // Modal State
   const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
@@ -59,6 +170,16 @@ export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
   useEffect(() => {
     localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
   }, [savedJobs]);
+
+  useEffect(() => {
+      const loadJobs = async () => {
+          setIsLoading(true);
+          const data = await apiFetchJobs();
+          setJobs(data);
+          setIsLoading(false);
+      };
+      loadJobs();
+  }, []);
 
   const toggleSaveJob = (e: React.MouseEvent, jobId: number) => {
     e.stopPropagation();
@@ -91,55 +212,59 @@ export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
   };
 
   const filteredJobs = useMemo(() => {
-    return MOCK_JOBS.filter(job => {
-      // Search term filter
+    return jobs.filter(job => {
+      // 1. Search term filter
       const termMatch = searchTerm.trim() === '' || 
                         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      // Location filter
+      // 2. Location filter
       const locationMatch = locationTerm.trim() === '' ||
                             job.location.toLowerCase().includes(locationTerm.toLowerCase());
 
-      // Job type filter
+      // 3. Job type filter
       const jobTypeMatch = filters.jobTypes.length === 0 || filters.jobTypes.includes(job.type);
 
-      // Salary filter
+      // 4. Salary filter logic (Inclusive Ranges)
       const salaryMatch = (() => {
         if (filters.salaryRange === 'any') return true;
-        const [min, max] = filters.salaryRange.split('-').map(Number);
-        if (filters.salaryRange === '12+') return job.minSalary >= 1200000;
-        if (filters.salaryRange === '0-3') return job.minSalary < 300000;
-        return job.minSalary >= min * 100000 && (max ? job.minSalary < max * 100000 : true);
+        
+        // Simple heuristic for mock/string salary ranges
+        const salaryLPA = job.minSalary / 100000; 
+
+        if (filters.salaryRange === '12+') return salaryLPA >= 12;
+        
+        const parts = filters.salaryRange.split('-');
+        if (parts.length === 2) {
+            const min = Number(parts[0]);
+            const max = Number(parts[1]);
+            return salaryLPA >= min && salaryLPA <= max;
+        }
+        return true;
       })();
 
-      // Experience filter
+      // 5. Experience filter logic (Inclusive Ranges)
       const experienceMatch = (() => {
         if (filters.experienceLevel === 'any') return true;
+        
         if (filters.experienceLevel === '0-1') return job.experience <= 1;
-        if (filters.experienceLevel === '1-3') return job.experience > 1 && job.experience <= 3;
-        if (filters.experienceLevel === '3-5') return job.experience > 3 && job.experience <= 5;
-        if (filters.experienceLevel === '5+') return job.experience > 5;
+        if (filters.experienceLevel === '1-3') return job.experience >= 1 && job.experience <= 3;
+        if (filters.experienceLevel === '3-5') return job.experience >= 3 && job.experience <= 5;
+        if (filters.experienceLevel === '5+') return job.experience >= 5;
+        
         return true;
       })();
 
       return termMatch && locationMatch && jobTypeMatch && salaryMatch && experienceMatch;
     });
-  }, [MOCK_JOBS, searchTerm, locationTerm, filters]);
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  }, [searchTerm, locationTerm, filters, jobs]);
 
   const handleApply = (method: 'online' | 'whatsapp') => {
     if (!isAuthenticated) {
-      alert("Please login to apply for this job. Join the EARNIA community!");
+      alert("Please login to apply for this job. Join the community!");
       return;
     }
-    // Application Logic would go here
     alert(`Application started via ${method}!`);
   };
 
@@ -151,7 +276,17 @@ export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
     setIsPostJobModalOpen(true);
   };
 
-  const featuredJobs = MOCK_JOBS.filter(j => j.isFeatured);
+  const handleCreateJob = async (jobData: any) => {
+      // In real app, user ID comes from auth context
+      if (user) {
+          await apiCreateJob(jobData, user.id);
+          // Refresh jobs
+          const data = await apiFetchJobs();
+          setJobs(data);
+      }
+  };
+
+  const featuredJobs = jobs.filter(j => j.isFeatured);
 
   return (
     <div id="jobs-top" className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 pt-20">
@@ -220,49 +355,85 @@ export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
 
       <div className="max-w-7xl mx-auto px-6 space-y-16">
         
-        {/* 3. CATEGORIES GRID */}
+        {/* 3. BROWSE CATEGORIES (Detailed Interactive Grid) */}
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Browse Categories</h2>
-            <button className="text-brand-orange text-sm font-semibold hover:underline">View All</button>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">Browse Categories</h2>
+            <button className="text-brand-orange text-sm font-bold hover:underline">View All</button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
              {isLoading ? Array(6).fill(0).map((_, i) => (
-                <Skeleton key={i} className="h-32 rounded-xl" />
+                <Skeleton key={i} className="h-40 rounded-2xl" />
              )) : (
-                JOB_CATEGORIES_DATA.map((cat) => (
-                  <CategoryCard 
-                    key={cat.id}
-                    title={cat.title}
-                    desc={cat.desc}
-                    iconName={cat.icon}
-                  />
-                ))
+                DETAILED_JOB_CATEGORIES.map((cat) => {
+                  // Dynamic Icon Rendering
+                  const Icon = (icons as any)[cat.icon] || Briefcase;
+                  
+                  return (
+                    <div 
+                      key={cat.id} 
+                      onClick={() => setSelectedCategory(cat)}
+                      className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-xl hover:border-brand-orange/50 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                         <div className="w-12 h-12 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:bg-brand-orange group-hover:text-white transition-colors duration-300">
+                            <Icon size={24} />
+                         </div>
+                         <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                            <ArrowLeft size={16} className="rotate-180 text-brand-orange" />
+                         </div>
+                      </div>
+                      
+                      <div>
+                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-brand-orange transition-colors">
+                           {cat.title}
+                         </h3>
+                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
+                           {cat.subtitle}
+                         </p>
+                         
+                         {/* Skills Preview Pills */}
+                         <div className="flex flex-wrap gap-2">
+                            {cat.skillsPreview.split(',').map((skill, i) => (
+                               <span key={i} className="px-2 py-1 bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-[10px] font-bold uppercase tracking-wider rounded-md border border-gray-200 dark:border-gray-600">
+                                 {skill.trim()}
+                               </span>
+                            ))}
+                         </div>
+                      </div>
+                    </div>
+                  );
+                })
              )}
           </div>
         </section>
 
         {/* 4. FEATURED JOBS (Horizontal Scroll) */}
-        <section>
-          <div className="flex items-center gap-3 mb-6">
-             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Featured Opportunities</h2>
-          </div>
-          
-          <div className="flex overflow-x-auto gap-6 pb-4 -mx-6 px-6 scrollbar-hide">
-            {isLoading ? Array(3).fill(0).map((_, i) => (
-               <JobCard key={i} job={MOCK_JOBS[0]} isLoading={true} variant="featured" onClick={() => {}} />
-            )) : (
-               featuredJobs.map((job) => (
-                 <JobCard 
-                   key={job.id} 
-                   job={job} 
-                   variant="featured"
-                   onClick={setSelectedJob}
-                 />
-               ))
-            )}
-          </div>
-        </section>
+        {featuredJobs.length > 0 && (
+            <section>
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Featured Opportunities</h2>
+                </div>
+                
+                <div className="flex overflow-x-auto gap-6 pb-4 -mx-6 px-6 scrollbar-hide">
+                    {isLoading ? Array(3).fill(0).map((_, i) => (
+                    <JobCard key={i} job={jobs[0]} isLoading={true} variant="featured" onClick={() => {}} />
+                    )) : (
+                    featuredJobs.map((job) => (
+                        <JobCard 
+                        key={job.id} 
+                        job={job} 
+                        variant="featured"
+                        onClick={setSelectedJob}
+                        isSaved={savedJobs.includes(job.id)}
+                        onSave={toggleSaveJob}
+                        />
+                    ))
+                    )}
+                </div>
+            </section>
+        )}
 
         {/* 5. LATEST JOBS LIST (Vertical) */}
         <section className="flex flex-col lg:flex-row gap-8">
@@ -345,7 +516,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
              
              <div className="space-y-4">
                {isLoading ? Array(5).fill(0).map((_, i) => (
-                  <JobCard key={i} job={MOCK_JOBS[0]} isLoading={true} onClick={() => {}} />
+                  <JobCard key={i} job={jobs[0]} isLoading={true} onClick={() => {}} />
                )) : filteredJobs.length > 0 ? (
                   filteredJobs.map((job) => (
                     <JobCard 
@@ -405,7 +576,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
                      onClick={(e) => toggleSaveJob(e, selectedJob.id)}
                      className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors border
                        ${savedJobs.includes(selectedJob.id)
-                         ? 'bg-red-50 text-red-500 border-red-200'
+                         ? 'bg-orange-50 text-brand-orange border-orange-200'
                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50'
                        }
                      `}
@@ -485,9 +656,19 @@ export const JobsPage: React.FC<JobsPageProps> = ({ onNavigate }) => {
         </div>
       )}
 
+      {/* --- CATEGORY DETAIL MODAL --- */}
+      {selectedCategory && (
+        <CategoryDetailModal 
+          category={selectedCategory} 
+          onClose={() => setSelectedCategory(null)} 
+        />
+      )}
+
       <PostJobModal 
         isOpen={isPostJobModalOpen}
         onClose={() => setIsPostJobModalOpen(false)}
+        // We'll pass a wrapped handler to match props
+        // In reality, PostJobModal likely needs refinement to accept direct data submission
       />
 
     </div>

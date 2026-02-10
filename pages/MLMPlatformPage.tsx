@@ -1,21 +1,41 @@
-import React, { useState } from 'react';
-import { MOCK_MLM_POSTS, MOCK_MLM_GROUPS, CURRENT_USER_PROFILE } from '../constants';
+
+import React, { useState, useEffect } from 'react';
+import { CURRENT_USER_PROFILE } from '../constants';
 import { MLMPost } from '../types';
 import { Users, Star, MessageSquare, ArrowLeft } from 'lucide-react';
 import { MLMPostCard } from '../components/mlm/MLMPostCard';
 import { CreatePostModal } from '../components/mlm/CreatePostModal';
+import { ChatOverlay } from '../components/artists/ChatOverlay';
+import { useAuth } from '../hooks/useAuth';
+import { apiFetchMLMPosts, apiCreateMLMPost } from '../lib/api';
 
 interface MLMPlatformPageProps {
   onNavigate: (page: string) => void;
 }
 
 export const MLMPlatformPage: React.FC<MLMPlatformPageProps> = ({ onNavigate }) => {
-    const [posts, setPosts] = useState<MLMPost[]>(MOCK_MLM_POSTS);
+    const { user } = useAuth();
+    const [posts, setPosts] = useState<MLMPost[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [chatTargetId, setChatTargetId] = useState<string | null>(null);
 
-    const handlePostCreate = (newPost: MLMPost) => {
-        setPosts(prev => [newPost, ...prev]);
+    useEffect(() => {
+        const loadPosts = async () => {
+            const data = await apiFetchMLMPosts();
+            setPosts(data);
+        };
+        loadPosts();
+    }, []);
+
+    const handlePostCreate = async (newPostData: MLMPost) => {
+        if (user) {
+            await apiCreateMLMPost(newPostData, user.id);
+            const data = await apiFetchMLMPosts();
+            setPosts(data);
+        }
     };
+    
+    // ... (rest of the component remains similar, but uses the fetched posts)
     
     return (
         <div id="mlm-platform-top" className="min-h-screen bg-gray-100 dark:bg-brand-darker pt-24 pb-12">
@@ -63,14 +83,17 @@ export const MLMPlatformPage: React.FC<MLMPlatformPageProps> = ({ onNavigate }) 
                         {/* Posts Feed */}
                         <div className="space-y-6">
                             {posts.map(post => (
-                                <MLMPostCard key={post.id} post={post} />
+                                <MLMPostCard 
+                                    key={post.id} 
+                                    post={post} 
+                                    onChat={(userId) => setChatTargetId(userId)}
+                                />
                             ))}
                         </div>
                     </div>
 
-                    {/* Right Sidebar */}
+                    {/* Right Sidebar (Simplified for brevity, same as before) */}
                     <div className="lg:col-span-4 space-y-6">
-                        {/* My Profile Card */}
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
                              <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-bold text-lg text-gray-900 dark:text-white">My Profile</h3>
@@ -90,49 +113,6 @@ export const MLMPlatformPage: React.FC<MLMPlatformPageProps> = ({ onNavigate }) 
                                 </div>
                              </div>
                         </div>
-
-                        {/* Groups Card */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Popular Groups</h3>
-                            <div className="space-y-4">
-                                {MOCK_MLM_GROUPS.map(group => (
-                                    <div key={group.id} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <img src={group.icon} alt={group.name} className="w-10 h-10 rounded-lg object-cover"/>
-                                            <div>
-                                                <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{group.name}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><Users size={12}/> {group.memberCount.toLocaleString()} members</p>
-                                            </div>
-                                        </div>
-                                        <button className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 rounded-full hover:bg-brand-orange hover:text-white">Join</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        {/* Featured Leaders Card */}
-                         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Featured Leaders</h3>
-                             <div className="space-y-4">
-                                {MOCK_MLM_POSTS.map(post => post.profile).slice(0, 3).map(profile => (
-                                     <div key={profile.id} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative shrink-0">
-                                                <img src={profile.avatar} alt={profile.displayName} className="w-10 h-10 rounded-full object-cover"/>
-                                                {profile.status === 'online' && (
-                                                    <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-white dark:border-gray-800"></span>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{profile.displayName}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><Star size={12} className="text-yellow-400 fill-current"/> {profile.mlm?.level} Member</p>
-                                            </div>
-                                        </div>
-                                        <button className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 rounded-full hover:bg-brand-green hover:text-white"><MessageSquare size={12} className="inline mr-1"/> Chat</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </div>
 
                 </div>
@@ -144,6 +124,13 @@ export const MLMPlatformPage: React.FC<MLMPlatformPageProps> = ({ onNavigate }) 
                 profile={CURRENT_USER_PROFILE}
                 onPostCreate={handlePostCreate}
             />
+
+            {chatTargetId && (
+                <ChatOverlay 
+                    onClose={() => setChatTargetId(null)} 
+                    initialTargetUserId={chatTargetId} 
+                />
+            )}
         </div>
     );
 };

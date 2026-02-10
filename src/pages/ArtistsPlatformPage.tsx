@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { UserProfile, PlatformRole, PortfolioItem, ArtistCategory } from '../types';
-import { ARTIST_CATEGORIES } from '../constants';
-import { apiFetchArtists, apiUpdateProfile } from '../lib/api';
-import { Edit, Star, Verified, MoreVertical, Instagram, Facebook, Youtube, Globe, Palette, UserPlus, MessageSquare as MessageSquareIcon, Image as ImageIcon, Video as VideoIcon, Film, Trash2, X, ChevronLeft, ChevronRight, Plus, ExternalLink, MapPin, Briefcase, Award, User as UserIcon, Search, Filter, ArrowLeft, Calendar, Flag, CheckCircle, Users } from 'lucide-react';
+import { USER_PROFILES, ARTIST_CATEGORIES } from '../constants';
+import { Edit, Star, Verified, MoreVertical, Instagram, Facebook, Youtube, Globe, Palette, UserPlus, MessageSquare as MessageSquareIcon, Image as ImageIcon, Video as VideoIcon, Film, Trash2, X, ChevronLeft, ChevronRight, Plus, ExternalLink, MapPin, Briefcase, Award, User as UserIcon, Search, Filter, ArrowLeft } from 'lucide-react';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { PortfolioAddItemModal } from '../components/PortfolioAddItemModal';
 import { ChatOverlay } from '../components/artists/ChatOverlay';
@@ -30,48 +29,46 @@ const calculateProfileCompletion = (profile: UserProfile): number => {
     return Math.min(score, 100);
 };
 
-// --- DATA SERVICE ---
+// --- MOCK DATA SERVICE ---
 const useArtistData = () => {
     const [artists, setArtists] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        const loadArtists = async () => {
-            const data = await apiFetchArtists();
-            setArtists(data);
+        const timer = setTimeout(() => {
+            setArtists(USER_PROFILES);
             setIsLoading(false);
-        };
-        loadArtists();
+        }, 1200);
+        return () => clearTimeout(timer);
     }, []);
     
     const getArtistById = (id: string) => artists.find(a => a.id === id);
     
-    const saveArtist = async (updatedProfile: Partial<UserProfile>) => {
-        // Optimistic update
+    const saveArtist = (updatedProfile: Partial<UserProfile>) => {
         setArtists(prev => 
             prev.map(a => {
                 if (a.id === updatedProfile.id) {
                     const newProfile = { ...a, ...updatedProfile };
-                    // Merge nested objects
-                    if (updatedProfile.artist) newProfile.artist = { ...(a.artist as object), ...updatedProfile.artist };
-                    if (updatedProfile.socials) newProfile.socials = { ...(a.socials || {}), ...updatedProfile.socials };
+                    if (updatedProfile.artist) {
+                        newProfile.artist = { ...(a.artist as object), ...updatedProfile.artist };
+                    }
+                    if (updatedProfile.portfolio) {
+                        newProfile.portfolio = updatedProfile.portfolio;
+                    }
+                    if (updatedProfile.socials) {
+                        newProfile.socials = { ...(a.socials || {}), ...updatedProfile.socials };
+                    }
                     return newProfile;
                 }
                 return a;
             })
         );
-
-        // Sync with Supabase
-        if (updatedProfile.id) {
-            await apiUpdateProfile(updatedProfile.id, updatedProfile);
-        }
     };
 
     return { artists, getArtistById, saveArtist, isLoading };
 };
 
-// --- SUB-COMPONENTS (PortfolioCard, PortfolioViewer, ArtistCard, ArtistCardSkeleton, ArtistProfileDetail) ---
-// ... (Keeping all UI components exactly as they were, just ensuring they use the new data types)
+// --- SUB-COMPONENTS ---
 
 const PortfolioCard: React.FC<{ 
     item: PortfolioItem; 
@@ -91,7 +88,7 @@ const PortfolioCard: React.FC<{
 
     return (
         <div onClick={onView} className="group relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer">
-            <img src={item.thumbnailUrl || item.mediaUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             <div className="absolute top-2 left-2 p-1.5 bg-black/40 backdrop-blur-sm rounded-full text-white">
                 <Icon size={14} />
@@ -293,8 +290,8 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                 </div>
             </div>
             
-            {/* Basic Info & Actions */}
-            <div className="pt-20 px-6 pb-2">
+            {/* Info */}
+            <div className="pt-20 px-6 pb-4">
                 <div className="flex justify-between items-start">
                     <div className="relative group/info">
                         <div className="flex items-center gap-2">
@@ -306,8 +303,8 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                                 </button>
                             )}
                         </div>
-                        <p className="text-gray-500 dark:text-gray-400 font-medium">{artist.artist?.primaryCategory || artist.platformRole}</p>
-                        
+                        <p className="text-gray-500 dark:text-gray-400 font-medium">{artist.artist?.primaryCategory || artist.platformRole} <span className="mx-1">•</span> {artist.address.city}</p>
+                        {/* Status Indicator */}
                         <div className="mt-2 flex items-center gap-2 text-xs">
                             {artist.status === 'online' ? (
                                 <>
@@ -355,97 +352,28 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {/* --- Detailed Personal & Professional Info --- */}
-            <div className="px-6 py-6 border-t border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    {/* Personal Information */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <MapPin size={16} className="text-brand-orange" /> Personal Details
-                        </h3>
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>City</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.city}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>State</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.state}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>Country</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.country}</span>
-                            </div>
-                            {artist.address.pincode && (
-                                <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                    <span>Pincode</span>
-                                    <span className="font-medium text-gray-900 dark:text-gray-200">{artist.address.pincode}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                <span>Joined</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-200">{artist.joinedDate}</span>
-                            </div>
-                        </div>
+                
+                {/* Profile Completion Score */}
+                <div className="mt-6">
+                    <div className="flex justify-between items-center mb-1">
+                        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {isCurrentUserProfile ? 'Your Profile Completion' : 'Profile Strength'}
+                        </h4>
+                        <span className={`text-xs font-bold ${profileCompletionScore >= 80 ? 'text-brand-green' : 'text-brand-orange'}`}>
+                            {profileCompletionScore}%
+                        </span>
                     </div>
-
-                    {/* Professional Details */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <Briefcase size={16} className="text-blue-500" /> Professional Details
-                        </h3>
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            {artist.artist ? (
-                                <>
-                                    <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                        <span>Primary Category</span>
-                                        <span className="font-bold text-brand-orange">{artist.artist.primaryCategory}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-gray-50 dark:border-gray-700/50 pb-1.5 last:border-0">
-                                        <span>Verification Status</span>
-                                        <span className={`font-bold flex items-center gap-1 ${artist.isVerified ? 'text-green-600' : 'text-gray-500'}`}>
-                                            {artist.isVerified ? <><CheckCircle size={12}/> Verified</> : 'Unverified'}
-                                        </span>
-                                    </div>
-                                    {artist.artist.secondaryCategories && artist.artist.secondaryCategories.length > 0 && (
-                                        <div className="border-b border-gray-50 dark:border-gray-700/50 pb-2 last:border-0">
-                                            <span className="block mb-1">Other Categories</span>
-                                            <div className="flex flex-wrap gap-1 justify-end">
-                                                {artist.artist.secondaryCategories.map((cat) => (
-                                                    <span key={cat} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] text-gray-800 dark:text-gray-200 font-medium">
-                                                        {cat}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {artist.artist.specialties && artist.artist.specialties.length > 0 && (
-                                        <div className="pb-1">
-                                            <span className="block mb-1">Specialties</span>
-                                            <div className="flex flex-wrap gap-1 justify-end">
-                                                {artist.artist.specialties.map((spec) => (
-                                                    <span key={spec} className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded text-[10px] font-medium">
-                                                        {spec}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <div className="text-center py-4 text-gray-400 italic">No professional details available.</div>
-                            )}
-                        </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                        <div
+                            className={`h-1.5 rounded-full transition-all duration-500 ease-out ${profileCompletionScore >= 80 ? 'bg-brand-green' : 'bg-brand-orange'}`}
+                            style={{ width: `${profileCompletionScore}%` }}
+                        />
                     </div>
-
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="px-6 mt-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-6 mt-2 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex gap-6 text-sm font-semibold text-gray-500 dark:text-gray-400">
                     {['About', 'Portfolio', 'Reviews'].map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)} className={`py-3 border-b-2 transition-colors ${activeTab === tab ? 'border-brand-orange text-brand-orange' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'}`}>
@@ -464,12 +392,98 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                             <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-base flex items-center gap-2">
                                 <UserIcon size={18} className="text-brand-orange" /> Biography
                             </h3>
-                            <p className="leading-relaxed whitespace-pre-line">{artist.bio || "No biography provided yet."}</p>
+                            <p className="leading-relaxed">{artist.bio || "No biography provided yet."}</p>
                             {isCurrentUserProfile && (
                                 <button onClick={onEdit} className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-brand-orange bg-gray-50 dark:bg-gray-700 rounded-full opacity-0 group-hover/bio:opacity-100 transition-all">
                                     <Edit size={14} />
                                 </button>
                             )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Professional Details Card */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base border-b border-gray-100 dark:border-gray-700 pb-3 flex items-center gap-2">
+                                    <Briefcase size={18} className="text-green-500" /> Professional Details
+                                </h3>
+                                <div className="space-y-3">
+                                    {artist.artist && (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 dark:text-gray-400">Status</span>
+                                                <span className={`font-semibold ${artist.isVerified ? 'text-blue-500' : 'text-gray-500'}`}>
+                                                    {artist.isVerified ? 'Verified Artist' : 'Unverified'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 dark:text-gray-400">Primary Category</span>
+                                                <span className="font-semibold text-brand-orange">{artist.artist.primaryCategory}</span>
+                                            </div>
+                                            {artist.artist.secondaryCategories && artist.artist.secondaryCategories.length > 0 && (
+                                                <div className="flex justify-between items-start">
+                                                    <span className="text-gray-500 dark:text-gray-400">Other Categories</span>
+                                                    <div className="flex flex-wrap justify-end gap-1 max-w-[60%]">
+                                                        {artist.artist.secondaryCategories.map(cat => (
+                                                            <span key={cat} className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{cat}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-gray-500 dark:text-gray-400">Specialties</span>
+                                                <div className="flex flex-wrap justify-end gap-1 max-w-[60%]">
+                                                    {artist.artist.specialties.map(spec => (
+                                                        <span key={spec} className="text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">{spec}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 dark:text-gray-400">Experience</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">{artist.experience} Years</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 dark:text-gray-400">Rate / Fee</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">{artist.artist.rate || 'N/A'}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Personal Details Card */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base border-b border-gray-100 dark:border-gray-700 pb-3 flex items-center gap-2">
+                                    <MapPin size={18} className="text-blue-500" /> Location & Info
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-500 dark:text-gray-400">City</span>
+                                        <span className="font-semibold text-gray-900 dark:text-white">{artist.address.city}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-500 dark:text-gray-400">State</span>
+                                        <span className="font-semibold text-gray-900 dark:text-white">{artist.address.state}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-500 dark:text-gray-400">Country</span>
+                                        <span className="font-semibold text-gray-900 dark:text-white">{artist.address.country}</span>
+                                    </div>
+                                    {artist.address.pincode && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-500 dark:text-gray-400">Pincode</span>
+                                            <span className="font-semibold text-gray-900 dark:text-white">{artist.address.pincode}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-500 dark:text-gray-400">Joined</span>
+                                        <span className="font-semibold text-gray-900 dark:text-white">{artist.joinedDate}</span>
+                                    </div>
+                                     <div className="flex justify-between items-center">
+                                        <span className="text-gray-500 dark:text-gray-400">Languages</span>
+                                        <span className="font-semibold text-gray-900 dark:text-white text-right max-w-[60%] truncate">{artist.languages.join(', ')}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         {/* Achievements Section */}
@@ -485,30 +499,6 @@ const ArtistProfileDetail: React.FC<ArtistProfileDetailProps> = ({
                                                 <Award size={14} />
                                             </div>
                                             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{ach}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Group Memberships */}
-                        {artist.groupMemberships && artist.groupMemberships.length > 0 && (
-                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base flex items-center gap-2">
-                                    <Users size={18} className="text-purple-500" /> Community Groups
-                                </h3>
-                                <div className="space-y-3">
-                                    {artist.groupMemberships.map((group) => (
-                                        <div key={group.groupId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center shrink-0 border border-gray-300 dark:border-gray-500">
-                                                    {group.groupImage ? <img src={group.groupImage} alt={group.groupName} className="w-full h-full object-cover" /> : <Users size={18} />}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-gray-900 dark:text-white leading-tight">{group.groupName}</p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{group.role} • Joined {group.joinedDate}</p>
-                                                </div>
-                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -603,6 +593,10 @@ export const ArtistsPlatformPage: React.FC<ArtistsPlatformPageProps> = ({ onNavi
 
     const handleSaveProfile = (updatedData: Partial<UserProfile>) => {
         saveArtist(updatedData);
+        // Refresh local state if the edited artist is the selected one
+        if (selectedArtist && updatedData.id === selectedArtist.id) {
+             // force update logic handled by hook
+        }
     };
 
     const handlePortfolioSave = (item: PortfolioItem) => {

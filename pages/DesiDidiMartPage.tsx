@@ -1,23 +1,32 @@
 
 import React from 'react';
-import { ArrowLeft, ShoppingBag, Heart, Users, CheckCircle, Gift, MapPin, Smartphone, Truck, ShieldCheck, Phone, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Heart, Users, CheckCircle, Gift, MapPin, Smartphone, Truck, ShieldCheck, Phone, MessageCircle, Star } from 'lucide-react';
 
 interface DesiDidiMartPageProps {
   onNavigate: (page: string) => void;
 }
 
-const ProductSection: React.FC<{ title: string, items: string, icon: React.ElementType, color: string }> = ({ title, items, icon: Icon, color }) => (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300 group">
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${color} text-white shadow-md group-hover:scale-110 transition-transform`}>
-            <Icon size={24} />
+const ProductCardWithImage: React.FC<{ title: string, items: string, icon: React.ElementType, image: string, color: string }> = ({ title, items, icon: Icon, image, color }) => (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 group overflow-hidden flex flex-col h-full">
+        <div className="relative h-48 overflow-hidden">
+            <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80"></div>
+            <div className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center ${color} text-white shadow-lg z-10 backdrop-blur-sm bg-opacity-90`}>
+                <Icon size={20} />
+            </div>
+            <h3 className="absolute bottom-4 left-4 text-xl font-bold text-white mb-0 group-hover:translate-x-1 transition-transform">{title}</h3>
         </div>
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
-        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{items}</p>
+        <div className="p-6 flex-1 flex flex-col">
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{items}</p>
+            <div className="mt-auto pt-4 flex items-center gap-2 text-xs font-bold text-brand-orange uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                Explore Products &rarr;
+            </div>
+        </div>
     </div>
 );
 
 const FeatureCard: React.FC<{ title: string, desc: string, icon: React.ElementType }> = ({ title, desc, icon: Icon }) => (
-    <div className="flex gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+    <div className="flex gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 transition-colors">
         <div className="shrink-0">
             <div className="w-10 h-10 bg-brand-orange/10 text-brand-orange rounded-full flex items-center justify-center">
                 <Icon size={20} />
@@ -43,7 +52,7 @@ export const DesiDidiMartPage: React.FC<DesiDidiMartPageProps> = ({ onNavigate }
             <ArrowLeft size={18} /> Back to Dashboard
         </button>
 
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-2xl mb-16">
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-2xl mb-12">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/sativa.png')] opacity-20"></div>
             <div className="relative z-10 px-6 py-16 md:py-24 md:px-12 text-center md:text-left flex flex-col md:flex-row items-center gap-10">
                 <div className="flex-1">
@@ -79,6 +88,39 @@ export const DesiDidiMartPage: React.FC<DesiDidiMartPageProps> = ({ onNavigate }
                 </div>
             </div>
         </div>
+
+        {/* Promotional Gallery (New Section) */}
+        <section className="mb-20">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Star className="text-brand-orange fill-current" /> Community Highlights
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden relative group shadow-lg">
+                    <img src="https://images.unsplash.com/photo-1596468138838-70668f7c0248?q=80&w=1000&auto=format&fit=crop" alt="Promo 1" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80"></div>
+                    <div className="absolute bottom-4 left-4 text-white">
+                        <span className="text-xs font-bold bg-brand-orange px-2 py-1 rounded mb-2 inline-block">Featured</span>
+                        <h3 className="font-bold text-lg">Pure Handmade Pickles</h3>
+                    </div>
+                </div>
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden relative group shadow-lg">
+                    <img src="https://images.unsplash.com/photo-1606913084603-3e7702b01627?q=80&w=1000&auto=format&fit=crop" alt="Promo 2" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80"></div>
+                    <div className="absolute bottom-4 left-4 text-white">
+                        <span className="text-xs font-bold bg-pink-600 px-2 py-1 rounded mb-2 inline-block">Best Seller</span>
+                        <h3 className="font-bold text-lg">Authentic Spices</h3>
+                    </div>
+                </div>
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden relative group shadow-lg">
+                    <img src="https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?q=80&w=1000&auto=format&fit=crop" alt="Promo 3" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80"></div>
+                    <div className="absolute bottom-4 left-4 text-white">
+                        <span className="text-xs font-bold bg-green-600 px-2 py-1 rounded mb-2 inline-block">New Arrival</span>
+                        <h3 className="font-bold text-lg">Handloom Sarees</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         {/* Mission Section */}
         <section className="mb-20">
@@ -122,40 +164,46 @@ export const DesiDidiMartPage: React.FC<DesiDidiMartPageProps> = ({ onNavigate }
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <ProductSection 
+                <ProductCardWithImage 
                     title="Kitchen se Jude" 
                     items="Mirchi, haldi, dhaniya powder, atta, besan, sarson ka tel, daal, chawal, chai, cheeni – sab desi quality mein!"
                     icon={ShoppingBag}
+                    image="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=1000&auto=format&fit=crop"
                     color="bg-orange-500"
                 />
-                <ProductSection 
+                <ProductCardWithImage 
                     title="Haath se Bana" 
                     items="Achaar, jam, biscuits, namkeen, agarbatti – ghar jaisa swaad!"
                     icon={Heart}
+                    image="https://images.unsplash.com/photo-1621996659490-3275b4d0d951?q=80&w=1000&auto=format&fit=crop"
                     color="bg-red-500"
                 />
-                <ProductSection 
+                <ProductCardWithImage 
                     title="Safai ka Saaman" 
                     items="Jhadoo, pochha, floor cleaner, handwash, herbal sabun – chemical-free!"
                     icon={CheckCircle}
+                    image="https://images.unsplash.com/photo-1584622050111-993a426fbf0a?q=80&w=1000&auto=format&fit=crop"
                     color="bg-teal-500"
                 />
-                <ProductSection 
+                <ProductCardWithImage 
                     title="Pehnawa aur Saaman" 
                     items="Kapde, jootey, jute bags, kapde ke thailay – fashionable aur eco-friendly!"
                     icon={ShoppingBag}
+                    image="https://images.unsplash.com/photo-1610189012906-4783382c591d?q=80&w=1000&auto=format&fit=crop"
                     color="bg-purple-500"
                 />
-                <ProductSection 
+                <ProductCardWithImage 
                     title="Electronics bhi" 
                     items="LED bulbs, rechargeable lights, mobile chargers, power banks, smart TV – sab saste dam mein!"
                     icon={Smartphone}
+                    image="https://images.unsplash.com/photo-1550009158-9ebf69173e03?q=80&w=1000&auto=format&fit=crop"
                     color="bg-blue-600"
                 />
-                <ProductSection 
+                <ProductCardWithImage 
                     title="Online & Offline" 
                     items="Nazdeeki centre par aake kharido ya Website/App se ghar baithe order karo. Home delivery available!"
                     icon={Truck}
+                    image="https://images.unsplash.com/photo-1616401784845-180882ba9ba8?q=80&w=1000&auto=format&fit=crop"
                     color="bg-gray-800"
                 />
             </div>
@@ -195,16 +243,16 @@ export const DesiDidiMartPage: React.FC<DesiDidiMartPageProps> = ({ onNavigate }
                     </div>
                     
                     {/* Visual representation of Card */}
-                    <div className="w-full md:w-96 h-56 bg-gradient-to-r from-pink-500 to-orange-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between transform rotate-2 hover:rotate-0 transition-transform duration-300 relative">
+                    <div className="w-full md:w-96 h-56 bg-gradient-to-r from-pink-500 to-orange-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between transform rotate-2 hover:rotate-0 transition-transform duration-300 relative group cursor-pointer">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')] opacity-30"></div>
                         <div className="flex justify-between items-start relative z-10">
                             <div>
-                                <h4 className="font-bold text-xl uppercase tracking-widest">Desi Didi</h4>
-                                <span className="text-xs uppercase opacity-80">Privilege Card</span>
+                                <h4 className="font-bold text-xl uppercase tracking-widest text-white">Desi Didi</h4>
+                                <span className="text-xs uppercase opacity-80 text-white">Privilege Card</span>
                             </div>
                             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Chip_icon.svg/1024px-Chip_icon.svg.png" className="w-10 h-10 opacity-80 filter brightness-200" alt="Chip" />
                         </div>
-                        <div className="relative z-10">
+                        <div className="relative z-10 text-white">
                             <p className="font-mono text-lg tracking-widest shadow-black drop-shadow-md">XXXX XXXX XXXX 9876</p>
                             <div className="flex justify-between items-end mt-2">
                                 <span className="text-xs uppercase opacity-80">Valid Thru<br/>12/30</span>

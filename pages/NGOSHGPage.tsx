@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { MOCK_NGO_SHG_GROUPS, CURRENT_USER_PROFILE } from '../constants';
 import { NgoShgGroup } from '../types';
@@ -304,18 +305,18 @@ const GroupFormModal: React.FC<{
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Focus Area *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Focus / Work Area *</label>
                 <input 
                   type="text" 
                   value={formData.focusArea} 
                   onChange={(e) => setFormData({...formData, focusArea: e.target.value})}
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-orange outline-none dark:text-white"
-                  placeholder="e.g. Education, Health"
+                  placeholder="e.g. Education, Health, Women Empowerment"
                   required 
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location Area *</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
                   <input 
@@ -343,7 +344,7 @@ const GroupFormModal: React.FC<{
             </div>
 
             <div>
-               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cover Image URL</label>
+               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Group Cover Image URL</label>
                <div className="relative">
                   <UploadCloud className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
                   <input 
@@ -414,46 +415,82 @@ const GroupFormModal: React.FC<{
   );
 };
 
-const GroupCard: React.FC<{ group: NgoShgGroup; onClick: (group: NgoShgGroup) => void }> = ({ group, onClick }) => (
-  <div 
-    onClick={() => onClick(group)}
-    className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
-  >
-    <div className="relative h-48">
-      <img src={group.image} alt={group.name} className="w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      <div className="absolute top-4 right-4">
+const GroupCard: React.FC<{ 
+  group: NgoShgGroup; 
+  onClick: (group: NgoShgGroup) => void;
+  onEdit?: (group: NgoShgGroup) => void;
+}> = ({ group, onClick, onEdit }) => {
+  const isOwner = group.ownerId === CURRENT_USER_PROFILE.id;
+
+  return (
+    <div 
+      onClick={() => onClick(group)}
+      className="group relative h-96 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+    >
+      {/* Full Background Image */}
+      <img src={group.image} alt={group.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+      
+      {/* Overlay Gradient: Darker on hover to make text readable */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-all duration-300 group-hover:bg-black/70 group-hover:via-black/70" />
+
+      {/* Type Badge & Edit Button */}
+      <div className="absolute top-4 right-4 z-20 flex gap-2">
+        {isOwner && onEdit && (
+           <button 
+             onClick={(e) => { e.stopPropagation(); onEdit(group); }}
+             className="p-1.5 bg-black/50 text-white rounded-full hover:bg-brand-orange transition-colors backdrop-blur-sm"
+             title="Edit Group"
+           >
+             <Edit2 size={14} />
+           </button>
+        )}
         <span className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${group.type === 'NGO' ? 'bg-blue-600' : 'bg-pink-600'}`}>
           {group.type}
         </span>
       </div>
-      <div className="absolute bottom-4 left-4 text-white">
-        <h3 className="text-xl font-bold drop-shadow-md flex items-center gap-2">
-          {group.name}
-          {group.isVerified && <CheckCircle size={16} className="text-blue-400 fill-blue-400/20" />}
-        </h3>
-        <p className="text-sm text-gray-200 drop-shadow-sm">{group.focusArea}</p>
+
+      {/* Content Layer */}
+      <div className="absolute inset-0 p-6 flex flex-col justify-end z-10 text-white">
+        
+        {/* Title Section: Always visible, adjusts position on hover */}
+        <div className="transform transition-transform duration-300 group-hover:-translate-y-2 origin-bottom">
+          <div className="flex items-center justify-between mb-1">
+              <h3 className="text-2xl font-bold drop-shadow-md flex items-center gap-2 leading-tight">
+                {group.name}
+                {group.isVerified && <CheckCircle size={18} className="text-blue-400 fill-blue-400/20" />}
+              </h3>
+          </div>
+          <p className="text-sm text-gray-300 font-medium mb-4 opacity-100 group-hover:opacity-0 transition-opacity duration-300 h-auto group-hover:h-0 overflow-hidden">
+              {group.focusArea}
+          </p>
+        </div>
+
+        {/* Hover Reveal Section: Description & Stats */}
+        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out">
+          <div className="overflow-hidden">
+            <div className="pt-2 border-t border-white/20">
+                <p className="text-xs font-bold text-brand-orange uppercase tracking-wider mb-1">Focus: {group.focusArea}</p>
+                <p className="text-sm text-gray-200 leading-relaxed line-clamp-4 mb-4">
+                  {group.description}
+                </p>
+                
+                <div className="flex items-center justify-between text-xs text-gray-300 font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin size={14} className="text-brand-orange" />
+                    <span className="truncate max-w-[120px]">{group.location}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users size={14} className="text-brand-orange" />
+                    <span>{group.members.toLocaleString()} Members</span>
+                  </div>
+                </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    
-    <div className="p-5 flex-1 flex flex-col">
-      <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-4 flex-grow">
-        {group.description}
-      </p>
-      
-      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-4">
-        <div className="flex items-center gap-1.5">
-          <MapPin size={16} />
-          <span className="truncate max-w-[100px]">{group.location}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Users size={16} />
-          <span>{group.members.toLocaleString()} members</span>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const GroupDetailModal: React.FC<{ 
   group: NgoShgGroup; 
@@ -608,6 +645,11 @@ export const NGOSHGPage: React.FC<NGOSHGPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleEditGroupFromCard = (group: NgoShgGroup) => {
+    setEditingGroup(group);
+    setIsFormModalOpen(true);
+  };
+
   const handleSaveGroup = (groupData: NgoShgGroup) => {
     setGroups(prev => {
       const exists = prev.find(g => g.id === groupData.id);
@@ -689,7 +731,12 @@ export const NGOSHGPage: React.FC<NGOSHGPageProps> = ({ onNavigate }) => {
         {filteredGroups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredGroups.map(group => (
-              <GroupCard key={group.id} group={group} onClick={setSelectedGroup} />
+              <GroupCard 
+                key={group.id} 
+                group={group} 
+                onClick={setSelectedGroup} 
+                onEdit={handleEditGroupFromCard}
+              />
             ))}
           </div>
         ) : (

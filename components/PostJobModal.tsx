@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, UploadCloud, Briefcase, MapPin, DollarSign, FileText, ChevronDown } from 'lucide-react';
 import { JOB_CATEGORIES_DATA, JOB_ROLES_BY_CATEGORY } from '../constants';
@@ -70,7 +71,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({ isOpen, onClose }) =
     // Simulate API Call
     setTimeout(() => {
       setIsSubmitting(false);
-      // Simulate a random success/error
+      // Simulate a random success/error (mostly success for demo)
       if (Math.random() > 0.1) {
         setSubmitStatus('success');
       } else {

@@ -20,11 +20,18 @@ import { DigitalMarketingPage } from './pages/DigitalMarketingPage';
 import { NGOSHGPage } from './pages/NGOSHGPage';
 import { MusicIndustryPage } from './pages/MusicIndustryPage';
 import { DesiDidiMartPage } from './pages/DesiDidiMartPage';
+import { StudentCompetitionsPage } from './pages/StudentCompetitionsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
+import { ContactUsPage } from './pages/ContactUsPage';
+import { BarberBookingPage } from './pages/BarberBookingPage';
 import { Artist } from './types';
 import gsap from 'gsap';
+import { Loader2 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  // Destructure isLoading to handle session restoration state
+  const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [targetArtistId, setTargetArtistId] = useState<string | null>(null);
   const [targetStudioId, setTargetStudioId] = useState<string | null>(null);
@@ -106,7 +113,33 @@ const AppContent: React.FC = () => {
     }
   };
 
-  if (!isAuthenticated && !['jobs', 'artists-platform', 'casting-platform', 'mlm-platform', 'user-profile', 'we-tube', 'health-card', 'studios-platform', 'ngo-shg', 'music-industry', 'digital-marketing', 'desi-didi-mart'].includes(currentPage)) {
+  const publicPages = [
+    'jobs', 'artists-platform', 'casting-platform', 'mlm-platform', 
+    'user-profile', 'we-tube', 'health-card', 'studios-platform', 
+    'ngo-shg', 'music-industry', 'digital-marketing', 'desi-didi-mart',
+    'student-competitions', 'privacy', 'terms', 'contact', 'barber-booking'
+  ];
+
+  // --- 1. HANDLING LOADING STATE ---
+  // This prevents the AuthPage from flickering while Supabase restores the session
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div className="flex flex-col items-center gap-4">
+           <div className="w-16 h-16 bg-gradient-to-br from-brand-orange to-red-500 rounded-2xl flex items-center justify-center text-white shadow-lg animate-pulse">
+              <span className="font-bold text-2xl">A</span>
+           </div>
+           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+              <Loader2 className="animate-spin" size={20} />
+              <span className="font-semibold text-sm tracking-wide">Restoring Session...</span>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 2. AUTHENTICATION CHECK ---
+  if (!isAuthenticated && !publicPages.includes(currentPage)) {
     return <AuthPage onLoginSuccess={() => handleNavigate('dashboard')} />;
   }
   
@@ -136,10 +169,15 @@ const AppContent: React.FC = () => {
         {currentPage === 'ngo-shg' && <NGOSHGPage onNavigate={handleNavigate} />}
         {currentPage === 'music-industry' && <MusicIndustryPage onNavigate={handleNavigate} />}
         {currentPage === 'desi-didi-mart' && <DesiDidiMartPage onNavigate={handleNavigate} />}
+        {currentPage === 'student-competitions' && <StudentCompetitionsPage onNavigate={handleNavigate} />}
+        {currentPage === 'barber-booking' && <BarberBookingPage onNavigate={handleNavigate} />}
+        {currentPage === 'privacy' && <PrivacyPolicyPage onNavigate={handleNavigate} />}
+        {currentPage === 'terms' && <TermsOfServicePage onNavigate={handleNavigate} />}
+        {currentPage === 'contact' && <ContactUsPage onNavigate={handleNavigate} />}
       </div>
 
       {/* Conditionally render footer based on page */}
-      {showFooter && <Footer />}
+      {showFooter && <Footer onNavigate={handleNavigate} />}
     </div>
   );
 };
