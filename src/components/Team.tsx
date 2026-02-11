@@ -42,11 +42,14 @@ const teamMembers = [
 ];
 
 export default function Team() {
-  const sectionRef = useRef(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Safety check for sectionRef
+      if (!sectionRef.current) return;
+
       // Animate section title
       gsap.fromTo(".team-title",
         { opacity: 0, y: 50 },
@@ -63,6 +66,8 @@ export default function Team() {
 
       // Staggered card reveal
       cardsRef.current.forEach((card, index) => {
+        if (!card) return; // Skip if ref is null
+        
         gsap.fromTo(card,
           { opacity: 0, y: 100, rotateX: -15 },
           {

@@ -61,11 +61,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
     if (section === 'artist' && field) {
        setFormData(prev => ({
         ...prev,
-        artist: { ...(prev.artist as object), [field]: value }
+        artist: { ...(prev.artist as any), [field]: value }
       }));
     } else if (field) {
-      // Handle nested fields like socials.whatsapp if necessary, though typical flat handling is usually cleaner
-      // For deeper nesting passed as "section.field"
       setFormData(prev => ({
         ...prev,
         [section]: { ...(prev as any)[section], [field]: value }
@@ -105,7 +103,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
           
           setFormData(prev => ({
               ...prev,
-              artist: { ...(prev.artist as object), [field]: newItems }
+              artist: { ...(prev.artist as any), [field]: newItems }
           }));
       }
   };
@@ -123,7 +121,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
     setFormData(prev => ({
       ...prev,
-      artist: { ...(prev.artist as object), secondaryCategories: newCategories }
+      artist: { ...(prev.artist as any), secondaryCategories: newCategories }
     }));
   };
 
@@ -208,8 +206,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
                  <div className="mt-6">
                     <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Bio / About Me</label>
-                        <span className={`text-xs ${bioLength > 250 ? 'text-red-500 font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            {isArtisticRole ? 'Bio / About Artist' : 'Bio / About Me'}
+                        </label>
+                        <span className={`text-xs transition-colors duration-300 ${bioLength > 250 ? 'text-red-500 font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
                             {bioLength}/300
                         </span>
                     </div>
@@ -219,8 +219,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                         onChange={handleChange} 
                         rows={4} 
                         maxLength={300}
-                        placeholder="Tell everyone about your journey and vision..." 
-                        className={`w-full p-3 bg-gray-50 dark:bg-gray-700 border rounded-xl outline-none focus:ring-2 focus:ring-brand-orange transition-colors ${bioLength > 280 ? 'border-red-300 focus:border-red-500' : 'border-gray-200 dark:border-gray-600'}`}
+                        placeholder={isArtisticRole ? "Tell us about your artistic journey, style, and vision..." : "Tell everyone about yourself..."}
+                        className={`w-full p-3 bg-gray-50 dark:bg-gray-700 border rounded-xl outline-none focus:ring-2 focus:ring-brand-orange transition-all duration-300 ${bioLength > 280 ? 'border-red-300 focus:border-red-500 ring-red-200' : 'border-gray-200 dark:border-gray-600'}`}
                     ></textarea>
                 </div>
             </section>
